@@ -3,17 +3,19 @@ import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/app/utils/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { cn, getInitials } from '@/lib/utils'
 import type { Profile, DailyLog, WorkStatus } from '@/types/supabase'
 
 import { motion } from 'framer-motion'
 
-const STATUS_COLORS: Record<WorkStatus, { bg: string, text: string, border: string }> = {
-  in_office: { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/20' },
-  wfh: { bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-500/20' },
-  off: { bg: 'bg-zinc-500/10', text: 'text-zinc-600 dark:text-zinc-400', border: 'border-zinc-500/20' },
-  sick: { bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/20' },
-  vacation: { bg: 'bg-purple-500/10', text: 'text-purple-600 dark:text-purple-400', border: 'border-purple-500/20' },
+type StatusTone = 'in_office' | 'wfh' | 'off' | 'unknown'
+
+const STATUS_COLORS: Record<StatusTone, { bg: string, text: string, border: string, ring: string, fallback: string, dot: string }> = {
+  in_office: { bg: 'bg-emerald-500/12', text: 'text-emerald-300', border: 'border-emerald-500/30', ring: 'ring-emerald-500/60', fallback: 'bg-emerald-500/18 text-emerald-200', dot: 'bg-emerald-400' },
+  wfh: { bg: 'bg-sky-500/12', text: 'text-sky-300', border: 'border-sky-500/30', ring: 'ring-sky-500/60', fallback: 'bg-sky-500/18 text-sky-200', dot: 'bg-sky-400' },
+  off: { bg: 'bg-zinc-500/12', text: 'text-zinc-300', border: 'border-zinc-500/30', ring: 'ring-zinc-500/60', fallback: 'bg-zinc-700 text-zinc-200', dot: 'bg-zinc-400' },
+  unknown: { bg: 'bg-rose-500/12', text: 'text-rose-300', border: 'border-rose-500/30', ring: 'ring-rose-500/75', fallback: 'bg-rose-500/18 text-rose-200', dot: 'bg-rose-400' },
 }
 
 const STATUS_LABELS: Record<WorkStatus, string> = {
@@ -22,6 +24,12 @@ const STATUS_LABELS: Record<WorkStatus, string> = {
   off: 'Off',
   sick: 'Sick',
   vacation: 'Vacation',
+}
+
+const getStatusTone = (status: WorkStatus | null): StatusTone => {
+  if (!status) return 'unknown'
+  if (status === 'in_office' || status === 'wfh') return status
+  return 'off'
 }
 
 interface Props {
@@ -152,10 +160,10 @@ export default function DailyLogs({ date, initialProfiles, initialLogs }: Props)
 
   const getSaveStatusColor = () => {
     switch (saveStatus) {
-      case 'saving': return 'text-yellow-600 dark:text-yellow-400'
-      case 'saved': return 'text-emerald-600 dark:text-emerald-400'
-      case 'error': return 'text-red-600 dark:text-red-400'
-      default: return 'text-muted-foreground'
+      case 'saving': return 'text-yellow-300'
+      case 'saved': return 'text-emerald-300'
+      case 'error': return 'text-red-300'
+      default: return 'text-zinc-400'
     }
   }
 
@@ -168,18 +176,28 @@ export default function DailyLogs({ date, initialProfiles, initialLogs }: Props)
     }
   }
 
+  const orderedProfiles = [...initialProfiles].sort((a, b) => {
+    if (a.id === currentUserId) return -1
+    if (b.id === currentUserId) return 1
+    return (a.name ?? a.email).localeCompare(b.name ?? b.email)
+  })
+
   return (
     <div className="p-4 md:p-6 w-full max-w-[1800px] mx-auto">
-      <div className="flex items-center gap-3 mb-6">
+      <div className="mb-6 flex items-center gap-3">
         <div className="h-8 w-1 bg-primary rounded-full" />
-        <h2 className="text-2xl font-bold tracking-tight">Team Daily Tasks</h2>
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Team Daily Tasks</h2>
+          <p className="text-sm text-muted-foreground">Your task card stays pinned first so it is easy to update throughout the day.</p>
+        </div>
       </div>
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
-        {initialProfiles.map((profile) => {
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
+        {orderedProfiles.map((profile) => {
           const log = logs.find((l) => l.user_id === profile.id)
           const isOwn = currentUserId === profile.id
-          const initials = (profile.name ?? profile.email).charAt(0).toUpperCase()
-          const displayName = profile.name ?? profile.email
+          const initials = getInitials(profile.name ?? profile.email)
+          const tone = STATUS_COLORS[getStatusTone(log?.status ?? null)]
+          const hasNoTasks = !!log && (log.status === 'in_office' || log.status === 'wfh') && !log.activities?.trim()
 
           return (
             <motion.div
@@ -188,79 +206,102 @@ export default function DailyLogs({ date, initialProfiles, initialLogs }: Props)
               animate={{ opacity: 1, y: 0 }}
               whileHover={{ y: -2, scale: 1.01 }}
               transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+              className="self-start"
             >
-              <Card className={`group relative overflow-hidden border bg-background/60 backdrop-blur-md shadow-sm transition-all duration-300 hover:shadow-md h-full flex flex-col ${log ? STATUS_COLORS[log.status].border : 'border-border/50'}`}>
-                {/* Subtle gradient background effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-foreground/[0.02] to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                
-                <CardHeader className="flex flex-row items-center gap-3 pb-2 pt-4 px-4 relative z-10">
-                  <Avatar className="h-8 w-8 ring-2 ring-background shadow-sm">
-                    <AvatarImage
-                      src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}`}
-                    />
-                    <AvatarFallback className="bg-muted text-muted-foreground font-medium text-xs">{initials}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 flex items-center justify-between">
-                    <CardTitle className="text-sm font-semibold truncate pr-2">{displayName}</CardTitle>
-                    {!log ? (
-                      <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-0 shadow-none font-bold uppercase tracking-wider text-[9px] px-2 py-0.5 whitespace-nowrap animate-pulse">
-                        NOT LOGGED
-                      </Badge>
-                    ) : (
-                      <Badge className={`${STATUS_COLORS[log.status].bg} ${STATUS_COLORS[log.status].text} border-0 shadow-none font-bold uppercase tracking-wider text-[9px] px-2 py-0.5 whitespace-nowrap`}>
-                        {STATUS_LABELS[log.status]}
-                      </Badge>
+              <Card className={cn(
+                'group relative overflow-hidden border bg-zinc-900 shadow-sm transition-all duration-300 hover:shadow-md flex flex-col',
+                isOwn ? 'border-primary/25 shadow-primary/5' : tone.border
+              )} size="sm">
+                <CardHeader className="relative z-10 flex flex-row items-center gap-3 border-b border-white/5 pb-2 pt-3 px-3">
+                  <div className="relative">
+                    <Avatar className={cn('h-10 w-10 ring-2 shadow-sm', tone.ring, !log && 'animate-pulse')}>
+                      <AvatarFallback className={cn('font-medium text-sm', tone.fallback)}>{initials}</AvatarFallback>
+                    </Avatar>
+                    {!log && (
+                      <div className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-rose-500 animate-pulse ring-2 ring-zinc-900"></div>
+                    )}
+                    {hasNoTasks && (
+                      <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-400 animate-pulse ring-2 ring-zinc-900"></div>
                     )}
                   </div>
+                  <div className="flex-1 flex flex-col gap-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="truncate text-sm font-semibold text-foreground">{profile.email}</CardTitle>
+                      {isOwn && (
+                        <Badge className="border-0 bg-primary text-black shadow-none font-bold uppercase tracking-wider text-[10px] px-2 py-0.5 whitespace-nowrap rounded-full">
+                          You
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between gap-2 flex-wrap w-full">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {!log ? (
+                          <Badge className="border-0 bg-rose-500/10 text-rose-300 shadow-none font-bold uppercase tracking-wider text-[10px] px-2 py-0.5 whitespace-nowrap rounded-full animate-pulse">
+                            Not Logged
+                          </Badge>
+                        ) : (
+                          <Badge className={`${tone.bg} ${tone.text} border-0 shadow-none font-bold uppercase tracking-wider text-[10px] px-2 py-0.5 whitespace-nowrap rounded-full`}>
+                            {STATUS_LABELS[log.status]}
+                          </Badge>
+                        )}
+                        {hasNoTasks && (
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-300">
+                            No tasks yet
+                          </span>
+                        )}
+                      </div>
+                      {isOwn && (
+                        <div className={`flex items-center gap-1 text-[10px] font-medium ${getSaveStatusColor()}`}>
+                          <span>{getSaveStatusIcon()}</span>
+                          <span>
+                            {saveStatus === 'saving' && 'Saving'}
+                            {saveStatus === 'saved' && 'Saved'}
+                            {saveStatus === 'error' && 'Save failed'}
+                            {saveStatus === 'idle' && lastSaved && `Saved ${formatTimeAgo(lastSaved)}`}
+                            {saveStatus === 'idle' && !lastSaved && 'Not saved yet'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </CardHeader>
-                <CardContent className="relative z-10 px-4 pb-4 pt-1 flex-1">
+                <CardContent className="relative z-10 px-3 pb-3 pt-2.5">
                   {isOwn ? (
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-2">
                       <textarea
-                        className={`w-full resize-none bg-background/50 rounded-lg p-2.5 text-sm outline-none border transition-all placeholder:text-muted-foreground shadow-sm h-full min-h-[60px] ${
-                          saveStatus === 'saving' ? 'border-yellow-400/50 focus:border-yellow-400 focus:ring-yellow-400/20' :
-                          saveStatus === 'saved' ? 'border-emerald-400/50 focus:border-emerald-400 focus:ring-emerald-400/20' :
-                          saveStatus === 'error' ? 'border-red-400/50 focus:border-red-400 focus:ring-red-400/20' :
-                          'border-border/50 focus:border-primary/50 focus:ring-primary/20'
+                        className={`w-full resize-none rounded-xl bg-black/25 px-3 py-2.5 text-sm leading-6 outline-none border transition-all placeholder:text-muted-foreground/80 shadow-inner min-h-[52px] max-h-24 ${
+                          saveStatus === 'saving' ? 'border-yellow-400/60 focus:border-yellow-400 focus:ring-yellow-400/20' :
+                          saveStatus === 'saved' ? 'border-emerald-400/60 focus:border-emerald-400 focus:ring-emerald-400/20' :
+                          saveStatus === 'error' ? 'border-red-400/60 focus:border-red-400 focus:ring-red-400/20' :
+                          'border-white/8 focus:border-primary/50 focus:ring-primary/20'
                         }`}
-                        rows={2}
-                        placeholder="What are you working on today? (Press Enter to save)"
+                        placeholder="What are you working on today?"
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         onKeyDown={handleKeyDown}
                         onCompositionStart={() => { isComposing.current = true }}
                         onCompositionEnd={() => { isComposing.current = false }}
                       />
-                      <div className="flex items-center justify-between text-xs">
-                        <div className={`flex items-center gap-1 ${getSaveStatusColor()}`}>
-                          <span>{getSaveStatusIcon()}</span>
-                          <span>
-                            {saveStatus === 'saving' && 'Saving...'}
-                            {saveStatus === 'saved' && 'Saved'}
-                            {saveStatus === 'error' && 'Save failed'}
-                            {saveStatus === 'idle' && lastSaved && `Saved ${formatTimeAgo(lastSaved)}`}
-                          </span>
-                        </div>
-                        <div className="text-muted-foreground">
-                          Press Enter to save
-                        </div>
-                      </div>
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      <p className="whitespace-pre-wrap text-sm text-foreground/80 leading-relaxed">
-                        {log?.activities ?? <span className="text-muted-foreground italic">No tasks logged yet.</span>}
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-1">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                        Today&apos;s Tasks
+                      </div>
+                      <p className="whitespace-pre-wrap text-sm text-foreground/90 leading-relaxed min-h-8">
+                        {log?.activities ?? <span className="text-muted-foreground/60 italic">No tasks logged yet.</span>}
                       </p>
                       {!log && (
-                        <div className="flex items-center gap-2 mt-2">
+                        <div className="flex items-center gap-2 mt-4 bg-rose-500/10 px-3 py-2 rounded-lg">
                           <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
-                          <span className="text-xs text-rose-600 dark:text-rose-400 font-medium">Status not logged</span>
+                          <span className="text-xs text-rose-400 font-medium">Status not logged</span>
                         </div>
                       )}
                       {log && (log.status === 'in_office' || log.status === 'wfh') && !log.activities && (
-                        <div className="flex items-center gap-2 mt-2">
+                        <div className="flex items-center gap-2 mt-4 bg-amber-500/10 px-3 py-2 rounded-lg">
                           <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
-                          <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">Tasks not logged</span>
+                          <span className="text-xs text-amber-400 font-medium">Tasks not logged</span>
                         </div>
                       )}
                     </div>

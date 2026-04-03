@@ -84,37 +84,38 @@
 }
 
 .dark {
-  --background: oklch(0.145 0.02 250);
-  --foreground: oklch(0.985 0.005 250);
-  --card: oklch(0.145 0.02 250);
-  --card-foreground: oklch(0.985 0.005 250);
-  --popover: oklch(0.145 0.02 250);
-  --popover-foreground: oklch(0.985 0.005 250);
-  --primary: oklch(0.985 0.005 250);
-  --primary-foreground: oklch(0.145 0.02 250);
-  --secondary: oklch(0.269 0.02 250);
-  --secondary-foreground: oklch(0.985 0.005 250);
-  --muted: oklch(0.269 0.02 250);
-  --muted-foreground: oklch(0.708 0.02 250);
-  --accent: oklch(0.269 0.02 250);
-  --accent-foreground: oklch(0.985 0.005 250);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(0.269 0.02 250);
-  --input: oklch(0.269 0.02 250);
-  --ring: oklch(0.556 0.02 250);
+  --background: #18181b;
+  --foreground: #ffffff;
+  --card: #27272a;
+  --card-foreground: #ffffff;
+  --popover: #27272a;
+  --popover-foreground: #ffffff;
+  --primary: #86efac;
+  --primary-foreground: #000000;
+  --secondary: #3f3f46;
+  --secondary-foreground: #ffffff;
+  --muted: #3f3f46;
+  --muted-foreground: #a1a1aa;
+  --accent: #3f3f46;
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --border: #3f3f46;
+  --input: #3f3f46;
+  --ring: #86efac;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.145 0.02 250);
-  --sidebar-foreground: oklch(0.985 0.005 250);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0.005 250);
-  --sidebar-accent: oklch(0.269 0.02 250);
-  --sidebar-accent-foreground: oklch(0.985 0.005 250);
-  --sidebar-border: oklch(0.269 0.02 250);
-  --sidebar-ring: oklch(0.556 0.02 250);
+  --sidebar: #18181b;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #86efac;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #3f3f46;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #3f3f46;
+  --sidebar-ring: #86efac;
+  --radius: 1rem;
 }
 
 @layer base {
