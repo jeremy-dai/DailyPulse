@@ -1,6 +1,5 @@
 import { createClient } from '@/app/utils/supabase/server'
 import { redirect } from 'next/navigation'
-import DayPanel from '@/app/components/DayPanel'
 import TopDashboard from '@/app/components/TopDashboard'
 import DailyLogs from '@/app/components/DailyLogs'
 
@@ -23,12 +22,9 @@ export default async function DayPage({ params }: { params: Promise<{ date: stri
   const { data: logs } = await supabase.from('daily_logs').select('*').eq('date', date)
 
   return (
-    <div className="flex">
-      <DayPanel />
-      <div className="flex-1 flex flex-col min-h-screen">
-        <TopDashboard date={date} initialProfiles={profiles ?? []} initialLogs={logs ?? []} />
-        <DailyLogs date={date} initialProfiles={profiles ?? []} initialLogs={logs ?? []} />
-      </div>
-    </div>
+    <>
+      <TopDashboard date={date} initialProfiles={profiles ?? []} initialLogs={logs ?? []} />
+      <DailyLogs date={date} initialProfiles={profiles ?? []} initialLogs={logs ?? []} />
+    </>
   )
 }

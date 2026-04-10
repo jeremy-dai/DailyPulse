@@ -174,11 +174,25 @@ export default function DailyLogs({ date, initialProfiles, initialLogs }: Props)
     }
   }
 
-  const orderedProfiles = [...initialProfiles].sort((a, b) => {
-    if (a.id === currentUserId) return -1
-    if (b.id === currentUserId) return 1
-    return (a.name ?? a.email).localeCompare(b.name ?? b.email)
-  })
+  const STATUS_ORDER: Record<string, number> = {
+    in_office: 0,
+    wfh: 1,
+    sick: 2,
+    vacation: 3,
+    off: 4,
+  }
+
+  const orderedProfiles = [...initialProfiles]
+    .filter((p) => p.id === currentUserId || logs.some((l) => l.user_id === p.id))
+    .sort((a, b) => {
+      if (a.id === currentUserId) return -1
+      if (b.id === currentUserId) return 1
+      const logA = logs.find((l) => l.user_id === a.id)
+      const logB = logs.find((l) => l.user_id === b.id)
+      const orderA = logA ? (STATUS_ORDER[logA.status] ?? 5) : 6
+      const orderB = logB ? (STATUS_ORDER[logB.status] ?? 5) : 6
+      return orderA - orderB
+    })
 
   return (
     <div className="p-4 md:p-6 w-full max-w-[1800px] mx-auto">
