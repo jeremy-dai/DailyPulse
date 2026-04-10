@@ -1,6 +1,6 @@
 'use client'
 import { useParams, useRouter } from 'next/navigation'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useTransition } from 'react'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 
@@ -17,17 +17,23 @@ const getDaysInMonth = (year: number, month: number): Date[] => {
 export default function DayPanel() {
   const params = useParams()
   const router = useRouter()
+  const [isPending, startTransition] = useTransition()
   const today = new Date()
   const todayStr = today.toISOString().split('T')[0]
   const selectedDate = params.date as string
 
   const [viewYear, setViewYear] = useState(today.getFullYear())
   const [viewMonth, setViewMonth] = useState(today.getMonth())
+  const [pendingDate, setPendingDate] = useState<string | null>(null)
   const todayRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     todayRef.current?.scrollIntoView({ block: 'center', behavior: 'instant' })
   }, [])
+
+  useEffect(() => {
+    setPendingDate(null)
+  }, [selectedDate])
 
   const dates = getDaysInMonth(viewYear, viewMonth)
 
@@ -53,6 +59,15 @@ export default function DayPanel() {
     month: 'long',
     year: 'numeric',
   })
+
+  const navigateToDate = (dateStr: string) => {
+    if (dateStr === selectedDate) return
+
+    setPendingDate(dateStr)
+    startTransition(() => {
+      router.push(`/${dateStr}`)
+    })
+  }
 
   return (
     <div className="w-64 bg-background border-r border-border/10 h-screen sticky top-0 flex flex-col shrink-0 z-20">
@@ -87,16 +102,18 @@ export default function DayPanel() {
           const dateStr = date.toISOString().split('T')[0]
           const isToday = dateStr === todayStr
           const isSelected = dateStr === selectedDate
+          const isPendingSelection = pendingDate === dateStr && isPending
           const isWeekend = date.getDay() === 0 || date.getDay() === 6
 
           return (
             <button
               key={dateStr}
               ref={isToday ? todayRef : undefined}
-              onClick={() => router.push(`/${dateStr}`)}
+              onClick={() => navigateToDate(dateStr)}
+              aria-busy={isPendingSelection}
               className={cn(
                 'relative w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all duration-200 cursor-pointer group',
-                isSelected
+                isSelected || isPendingSelection
                   ? 'text-black font-semibold'
                   : isToday
                     ? 'text-primary font-semibold hover:bg-zinc-900'
@@ -105,10 +122,13 @@ export default function DayPanel() {
                       : 'text-zinc-400 hover:bg-zinc-900 hover:text-foreground'
               )}
             >
-              {isSelected && (
+              {(isSelected || isPendingSelection) && (
                 <motion.div
                   layoutId="active-date"
-                  className="absolute inset-0 bg-primary rounded-2xl"
+                  className={cn(
+                    'absolute inset-0 rounded-2xl',
+                    isPendingSelection ? 'bg-primary/70 animate-pulse' : 'bg-primary'
+                  )}
                   initial={false}
                   transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                 />
