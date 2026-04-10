@@ -18,10 +18,10 @@ type ExtendedStatus = WorkStatus | 'unknown'
 type StatusTone = 'in_office' | 'wfh' | 'off' | 'unknown'
 
 const STATUS_COLORS: Record<StatusTone, { bg: string, text: string, border: string, ring: string, dot: string, fallback: string }> = {
-  in_office: { bg: 'bg-emerald-500/12', text: 'text-emerald-300', border: 'border-emerald-500/30', ring: 'ring-emerald-500/70', dot: 'bg-emerald-400', fallback: 'bg-emerald-500/18 text-emerald-200' },
-  wfh: { bg: 'bg-sky-500/12', text: 'text-sky-300', border: 'border-sky-500/30', ring: 'ring-sky-500/70', dot: 'bg-sky-400', fallback: 'bg-sky-500/18 text-sky-200' },
-  off: { bg: 'bg-zinc-500/12', text: 'text-zinc-300', border: 'border-zinc-500/30', ring: 'ring-zinc-500/70', dot: 'bg-zinc-400', fallback: 'bg-zinc-700 text-zinc-200' },
-  unknown: { bg: 'bg-rose-500/12', text: 'text-rose-300', border: 'border-rose-500/30', ring: 'ring-rose-500/70', dot: 'bg-rose-400', fallback: 'bg-rose-500/18 text-rose-200' },
+  in_office: { bg: 'bg-emerald-500/20', text: 'text-emerald-200', border: 'border-emerald-500/50', ring: 'ring-emerald-500/80', dot: 'bg-emerald-400', fallback: 'bg-emerald-500/20 text-emerald-100' },
+  wfh: { bg: 'bg-sky-500/20', text: 'text-sky-200', border: 'border-sky-500/50', ring: 'ring-sky-500/80', dot: 'bg-sky-400', fallback: 'bg-sky-500/20 text-sky-100' },
+  off: { bg: 'bg-zinc-500/20', text: 'text-zinc-200', border: 'border-zinc-500/50', ring: 'ring-zinc-500/80', dot: 'bg-zinc-400', fallback: 'bg-zinc-700 text-zinc-100' },
+  unknown: { bg: 'bg-rose-500/20', text: 'text-rose-200', border: 'border-rose-500/50', ring: 'ring-rose-500/80', dot: 'bg-rose-400', fallback: 'bg-rose-500/20 text-rose-100' },
 }
 
 const STATUS_LABELS: Record<ExtendedStatus, string> = {
@@ -124,10 +124,8 @@ export default function TopDashboard({ date, initialProfiles, initialLogs }: Pro
           if (payload.eventType === 'INSERT') {
             setLogs((prev) => [...prev, payload.new as DailyLog])
           } else if (payload.eventType === 'UPDATE') {
-            setLogs((prev) => [
-              ...prev.filter((l) => l.id !== (payload.old as DailyLog).id),
-              payload.new as DailyLog,
-            ])
+            const updated = payload.new as DailyLog
+            setLogs((prev) => [...prev.filter((l) => l.id !== updated.id), updated])
           }
         }
       )
@@ -248,7 +246,7 @@ export default function TopDashboard({ date, initialProfiles, initialLogs }: Pro
             whileHover={{ y: -2, scale: 1.02 }}
             transition={{ type: 'spring', stiffness: 300, damping: 20 }}
             key={status}
-            className={`rounded-3xl bg-zinc-900 shadow-sm`}
+            className={`rounded-3xl bg-zinc-900/90 border border-white/10 shadow-sm transition-colors hover:border-white/20`}
           >
             <div className={`px-4 py-3 flex items-center justify-between`}>
               <span className="text-xs font-semibold text-zinc-400">{STATUS_LABELS[status]}</span>
@@ -295,7 +293,7 @@ export default function TopDashboard({ date, initialProfiles, initialLogs }: Pro
                 })}
               </div>
               {status === 'unknown' && grouped[status].length > 0 && (
-                <div className="mt-3 text-[10px] text-rose-400 font-medium uppercase tracking-wider">
+                <div className="mt-3 text-[10px] text-rose-300 font-medium uppercase tracking-wider">
                   Warning: {grouped[status].length} team member{grouped[status].length === 1 ? '' : 's'} not logged
                 </div>
               )}
@@ -303,7 +301,7 @@ export default function TopDashboard({ date, initialProfiles, initialLogs }: Pro
                 const userLog = logs.find((l) => l.user_id === p.id)
                 return !userLog?.activities?.trim()
               }) && (
-                <div className="mt-3 text-[10px] text-amber-400 font-medium uppercase tracking-wider">
+                <div className="mt-3 text-[10px] text-amber-300 font-medium uppercase tracking-wider">
                   Warning: {grouped[status].filter(p => !logs.find((l) => l.user_id === p.id)?.activities?.trim()).length} without tasks
                 </div>
               )}
@@ -314,12 +312,12 @@ export default function TopDashboard({ date, initialProfiles, initialLogs }: Pro
       {(unknownCount > 0 || missingTasksCount > 0) && (
         <div className="mt-4 flex flex-wrap gap-3">
           {unknownCount > 0 && (
-            <div className="rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1 text-xs font-semibold text-rose-300">
+            <div className="rounded-full border border-rose-500/50 bg-rose-500/20 px-3 py-1 text-xs font-semibold text-rose-200">
               Warning: {unknownCount} team member{unknownCount === 1 ? '' : 's'} not logged
             </div>
           )}
           {missingTasksCount > 0 && (
-            <div className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-300">
+            <div className="rounded-full border border-amber-500/50 bg-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-200">
               Warning: {missingTasksCount} team member{missingTasksCount === 1 ? '' : 's'} without tasks
             </div>
           )}

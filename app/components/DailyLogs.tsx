@@ -12,10 +12,10 @@ import { motion } from 'framer-motion'
 type StatusTone = 'in_office' | 'wfh' | 'off' | 'unknown'
 
 const STATUS_COLORS: Record<StatusTone, { bg: string, text: string, border: string, ring: string, fallback: string, dot: string }> = {
-  in_office: { bg: 'bg-emerald-500/12', text: 'text-emerald-300', border: 'border-emerald-500/30', ring: 'ring-emerald-500/60', fallback: 'bg-emerald-500/18 text-emerald-200', dot: 'bg-emerald-400' },
-  wfh: { bg: 'bg-sky-500/12', text: 'text-sky-300', border: 'border-sky-500/30', ring: 'ring-sky-500/60', fallback: 'bg-sky-500/18 text-sky-200', dot: 'bg-sky-400' },
-  off: { bg: 'bg-zinc-500/12', text: 'text-zinc-300', border: 'border-zinc-500/30', ring: 'ring-zinc-500/60', fallback: 'bg-zinc-700 text-zinc-200', dot: 'bg-zinc-400' },
-  unknown: { bg: 'bg-rose-500/12', text: 'text-rose-300', border: 'border-rose-500/30', ring: 'ring-rose-500/75', fallback: 'bg-rose-500/18 text-rose-200', dot: 'bg-rose-400' },
+  in_office: { bg: 'bg-emerald-500/20', text: 'text-emerald-200', border: 'border-emerald-500/50', ring: 'ring-emerald-500/80', fallback: 'bg-emerald-500/20 text-emerald-100', dot: 'bg-emerald-400' },
+  wfh: { bg: 'bg-sky-500/20', text: 'text-sky-200', border: 'border-sky-500/50', ring: 'ring-sky-500/80', fallback: 'bg-sky-500/20 text-sky-100', dot: 'bg-sky-400' },
+  off: { bg: 'bg-zinc-500/20', text: 'text-zinc-200', border: 'border-zinc-500/50', ring: 'ring-zinc-500/80', fallback: 'bg-zinc-700 text-zinc-100', dot: 'bg-zinc-400' },
+  unknown: { bg: 'bg-rose-500/20', text: 'text-rose-200', border: 'border-rose-500/50', ring: 'ring-rose-500/80', fallback: 'bg-rose-500/20 text-rose-100', dot: 'bg-rose-400' },
 }
 
 const STATUS_LABELS: Record<WorkStatus, string> = {
@@ -81,10 +81,8 @@ export default function DailyLogs({ date, initialProfiles, initialLogs }: Props)
           if (payload.eventType === 'INSERT') {
             setLogs((prev) => [...prev, payload.new as DailyLog])
           } else if (payload.eventType === 'UPDATE') {
-            setLogs((prev) => [
-              ...prev.filter((l) => l.id !== (payload.old as DailyLog).id),
-              payload.new as DailyLog,
-            ])
+            const updated = payload.new as DailyLog
+            setLogs((prev) => [...prev.filter((l) => l.id !== updated.id), updated])
           }
         }
       )
@@ -208,7 +206,7 @@ export default function DailyLogs({ date, initialProfiles, initialLogs }: Props)
             >
               <Card className={cn(
                 'group relative overflow-hidden border bg-zinc-900 shadow-sm transition-all duration-300 hover:shadow-md flex flex-col',
-                isOwn ? 'border-primary/25 shadow-primary/5' : tone.border
+                isOwn ? 'border-primary/60 shadow-primary/10' : tone.border
               )} size="sm">
                 <CardHeader className="relative z-10 flex flex-row items-center gap-3 border-b border-white/5 pb-2 pt-3 px-3">
                   <div className="relative">
@@ -231,7 +229,7 @@ export default function DailyLogs({ date, initialProfiles, initialLogs }: Props)
                     <div className="flex items-center justify-between gap-2 flex-wrap w-full">
                       <div className="flex items-center gap-2 flex-wrap">
                         {!log ? (
-                          <Badge className="border-0 bg-rose-500/10 text-rose-300 shadow-none font-bold uppercase tracking-wider text-[10px] px-2 py-0.5 whitespace-nowrap rounded-full animate-pulse">
+                          <Badge className="border-0 bg-rose-500/20 text-rose-200 shadow-none font-bold uppercase tracking-wider text-[10px] px-2 py-0.5 whitespace-nowrap rounded-full animate-pulse ring-1 ring-rose-500/30">
                             Not Logged
                           </Badge>
                         ) : (
@@ -259,11 +257,11 @@ export default function DailyLogs({ date, initialProfiles, initialLogs }: Props)
                   {isOwn ? (
                     <div className="flex flex-col gap-2">
                       <textarea
-                        className={`w-full resize-none rounded-xl bg-black/25 px-3 py-2.5 text-sm leading-6 outline-none border transition-all placeholder:text-muted-foreground/80 shadow-inner min-h-[52px] max-h-24 ${
+                        className={`w-full resize-none rounded-xl bg-black/40 px-3 py-2.5 text-sm leading-6 outline-none border transition-all placeholder:text-muted-foreground/80 shadow-inner min-h-[52px] max-h-24 ${
                           saveStatus === 'saving' ? 'border-yellow-400/60 focus:border-yellow-400 focus:ring-yellow-400/20' :
                           saveStatus === 'saved' ? 'border-emerald-400/60 focus:border-emerald-400 focus:ring-emerald-400/20' :
                           saveStatus === 'error' ? 'border-red-400/60 focus:border-red-400 focus:ring-red-400/20' :
-                          'border-white/8 focus:border-primary/50 focus:ring-primary/20'
+                          'border-white/20 focus:border-primary/50 focus:ring-primary/20'
                         }`}
                         placeholder="What are you working on today?"
                         value={inputValue}
@@ -283,9 +281,9 @@ export default function DailyLogs({ date, initialProfiles, initialLogs }: Props)
                         {log?.activities ?? <span className="text-zinc-500 italic">No tasks logged yet.</span>}
                       </p>
                       {!log && (
-                        <div className="flex items-center gap-2 mt-4 bg-rose-500/10 px-3 py-2 rounded-lg">
+                        <div className="flex items-center gap-2 mt-4 bg-rose-500/20 px-3 py-2 rounded-lg border border-rose-500/30">
                           <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
-                          <span className="text-xs text-rose-400 font-medium">Status not logged</span>
+                          <span className="text-xs text-rose-300 font-medium">Status not logged</span>
                         </div>
                       )}
                     </div>

@@ -15,7 +15,7 @@ export default async function DayPage({ params }: { params: Promise<{ date: stri
   const { date } = await params
 
   if (!isValidDate(date)) {
-    redirect(`/${new Date().toISOString().split('T')[0]}`)
+    redirect(`/${new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' })}`)
   }
 
   const supabase = await createClient()
