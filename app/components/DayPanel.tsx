@@ -65,7 +65,7 @@ export default function DayPanel() {
         </h1>
       </div>
       <div className="px-6 pb-4">
-        <h2 className="text-sm font-semibold text-muted-foreground mb-4">Schedule</h2>
+        <h2 className="text-sm font-semibold text-zinc-400 mb-4">Schedule</h2>
         <div className="flex justify-between items-center bg-zinc-900 rounded-full p-1 mb-2">
           <button
             onClick={goToPrevMonth}
@@ -101,8 +101,8 @@ export default function DayPanel() {
                   : isToday
                     ? 'text-primary font-semibold hover:bg-zinc-900'
                     : isWeekend
-                      ? 'text-muted-foreground/60 hover:bg-zinc-900 hover:text-muted-foreground'
-                      : 'text-muted-foreground hover:bg-zinc-900 hover:text-foreground'
+                      ? 'text-zinc-500 hover:bg-zinc-900 hover:text-zinc-400'
+                      : 'text-zinc-400 hover:bg-zinc-900 hover:text-foreground'
               )}
             >
               {isSelected && (

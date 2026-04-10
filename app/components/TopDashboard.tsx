@@ -33,6 +33,14 @@ const STATUS_LABELS: Record<ExtendedStatus, string> = {
   unknown: 'Not Logged',
 }
 
+const STATUS_DOT_COLORS: Record<string, string> = {
+  in_office: 'bg-emerald-400',
+  wfh: 'bg-sky-400',
+  off: 'bg-zinc-400',
+  sick: 'bg-amber-400',
+  vacation: 'bg-violet-400',
+}
+
 const STATUS_ORDER: ExtendedStatus[] = ['in_office', 'wfh', 'off', 'sick', 'vacation', 'unknown']
 
 const getStatusTone = (status: ExtendedStatus): StatusTone => {
@@ -157,20 +165,34 @@ export default function TopDashboard({ date, initialProfiles, initialLogs }: Pro
         <h1 className="text-2xl font-bold tracking-tight text-foreground">{displayDate}</h1>
         {currentUserId && (
           <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-muted-foreground">Your status:</span>
             <Select
               value={userLog?.status ?? null}
               onValueChange={(v) => handleStatusChange(v as WorkStatus)}
             >
-              <SelectTrigger className="w-48 bg-zinc-900 border-border/10 shadow-sm focus:ring-primary/20 transition-all rounded-full">
-                <SelectValue placeholder="Set status…" />
+              <SelectTrigger className={cn(
+                "w-52 border shadow-sm focus:ring-primary/20 transition-all rounded-full font-medium",
+                userLog?.status
+                  ? "bg-zinc-800 border-zinc-600 text-foreground"
+                  : "bg-zinc-900 border-dashed border-zinc-600 text-muted-foreground"
+              )}>
+                <div className="flex items-center gap-2">
+                  {userLog?.status && (
+                    <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", STATUS_DOT_COLORS[userLog.status])} />
+                  )}
+                  <span className={userLog?.status ? undefined : "text-muted-foreground"}>
+                    {userLog?.status ? STATUS_LABELS[userLog.status] : "Set your status…"}
+                  </span>
+                </div>
               </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-border/10 rounded-2xl">
-                <SelectItem value="in_office">In Office</SelectItem>
-                <SelectItem value="wfh">Work From Home</SelectItem>
-                <SelectItem value="off">Off</SelectItem>
-                <SelectItem value="sick">Sick</SelectItem>
-                <SelectItem value="vacation">Vacation</SelectItem>
+              <SelectContent alignItemWithTrigger={false} sideOffset={6} className="bg-zinc-800 border-zinc-600 rounded-xl p-1">
+                {(['in_office', 'wfh', 'off', 'sick', 'vacation'] as WorkStatus[]).map((status) => (
+                  <SelectItem key={status} value={status} className="rounded-lg focus:bg-zinc-700 cursor-pointer">
+                    <div className="flex items-center gap-2.5">
+                      <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", STATUS_DOT_COLORS[status])} />
+                      <span className="font-medium">{STATUS_LABELS[status]}</span>
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             {editingName ? (
@@ -229,7 +251,7 @@ export default function TopDashboard({ date, initialProfiles, initialLogs }: Pro
             className={`rounded-3xl bg-zinc-900 shadow-sm`}
           >
             <div className={`px-4 py-3 flex items-center justify-between`}>
-              <span className="text-xs font-semibold text-muted-foreground">{STATUS_LABELS[status]}</span>
+              <span className="text-xs font-semibold text-zinc-400">{STATUS_LABELS[status]}</span>
               <Badge className={`bg-black/20 ${STATUS_COLORS[getStatusTone(status)].text} text-xs border-0 px-2 py-0 shadow-none font-bold rounded-full`}>
                 {grouped[status].length}
               </Badge>

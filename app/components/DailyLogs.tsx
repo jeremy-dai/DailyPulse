@@ -188,7 +188,7 @@ export default function DailyLogs({ date, initialProfiles, initialLogs }: Props)
         <div className="h-8 w-1 bg-primary rounded-full" />
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Team Daily Tasks</h2>
-          <p className="text-sm text-muted-foreground">Your task card stays pinned first so it is easy to update throughout the day.</p>
+          <p className="text-sm text-zinc-400">Your task card stays pinned first so it is easy to update throughout the day.</p>
         </div>
       </div>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
@@ -280,7 +280,7 @@ export default function DailyLogs({ date, initialProfiles, initialLogs }: Props)
                         Today&apos;s Tasks
                       </div>
                       <p className="whitespace-pre-wrap text-sm text-foreground/90 leading-relaxed min-h-8">
-                        {log?.activities ?? <span className="text-muted-foreground/60 italic">No tasks logged yet.</span>}
+                        {log?.activities ?? <span className="text-zinc-500 italic">No tasks logged yet.</span>}
                       </p>
                       {!log && (
                         <div className="flex items-center gap-2 mt-4 bg-rose-500/10 px-3 py-2 rounded-lg">
