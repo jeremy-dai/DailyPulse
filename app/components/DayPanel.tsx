@@ -1,8 +1,10 @@
 'use client'
 import { useParams, useRouter } from 'next/navigation'
-import { useState, useEffect, useRef, useTransition } from 'react'
+import { useState, useEffect, useRef, useTransition, useMemo } from 'react'
 import { cn } from '@/lib/utils'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { createClient } from '@/app/utils/supabase/client'
+import type { DailyLog, Profile } from '@/types/supabase'
 
 const getDaysInMonth = (year: number, month: number): Date[] => {
   const days: Date[] = []
@@ -26,6 +28,53 @@ export default function DayPanel() {
   const [viewMonth, setViewMonth] = useState(today.getMonth())
   const [pendingDate, setPendingDate] = useState<string | null>(null)
   const todayRef = useRef<HTMLButtonElement>(null)
+
+  const [overviewOpen, setOverviewOpen] = useState(false)
+  const [overviewLogs, setOverviewLogs] = useState<(DailyLog & { profile?: Profile })[]>([])
+  const [overviewLoading, setOverviewLoading] = useState(false)
+  const [overviewUserId, setOverviewUserId] = useState<string | null>(null)
+
+  const openOverview = async () => {
+    setOverviewOpen(true)
+    setOverviewUserId(null)
+    setOverviewLoading(true)
+    const supabase = createClient()
+    const startDate = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-01`
+    const endDate = new Date(viewYear, viewMonth + 1, 0).toLocaleDateString('en-CA')
+    const [{ data: logs }, { data: profiles }] = await Promise.all([
+      supabase.from('daily_logs').select('*').gte('date', startDate).lte('date', endDate),
+      supabase.from('profiles').select('*'),
+    ])
+    const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]))
+    const enriched = (logs ?? [])
+      .filter((l) => l.activities?.trim())
+      .map((l) => ({ ...l, profile: profileMap.get(l.user_id) }))
+    setOverviewLogs(enriched)
+    setOverviewLoading(false)
+  }
+
+  const overviewUsers = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const log of overviewLogs) {
+      if (!m.has(log.user_id)) {
+        m.set(
+          log.user_id,
+          log.profile?.name?.trim() || log.profile?.email || 'Unknown'
+        )
+      }
+    }
+    return [...m.entries()]
+      .map(([id, label]) => ({ id, label }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+  }, [overviewLogs])
+
+  const filteredOverviewLogs = useMemo(
+    () =>
+      overviewUserId
+        ? overviewLogs.filter((l) => l.user_id === overviewUserId)
+        : overviewLogs,
+    [overviewLogs, overviewUserId]
+  )
 
   useEffect(() => {
     todayRef.current?.scrollIntoView({ block: 'center', behavior: 'instant' })
@@ -92,6 +141,13 @@ export default function DayPanel() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
           </button>
         </div>
+        <button
+          onClick={openOverview}
+          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs font-medium transition-colors border border-zinc-800 hover:border-zinc-700"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+          Overview
+        </button>
       </div>
       <div className="overflow-y-auto flex-1 px-4 space-y-1 scrollbar-hide pb-6">
         {dates.map((date) => {
@@ -143,6 +199,144 @@ export default function DayPanel() {
           )
         })}
       </div>
+
+      <AnimatePresence>
+        {overviewOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/70 backdrop-blur-sm"
+            onClick={() => setOverviewOpen(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 8 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+              className="bg-zinc-950 border border-zinc-800 rounded-xl w-full max-w-5xl h-[min(92vh,900px)] max-h-[92vh] flex flex-col shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 px-3 py-2.5 sm:px-4 border-b border-zinc-800 shrink-0">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <div className="w-6 h-6 rounded-md bg-primary/10 border border-primary/30 flex items-center justify-center shrink-0">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="text-sm font-semibold text-foreground leading-tight sm:text-base">Monthly Overview</h2>
+                    <p className="text-xs text-zinc-500 leading-tight">{monthLabel}</p>
+                  </div>
+                </div>
+                {!overviewLoading && overviewUsers.length > 0 && (
+                  <label className="flex items-center gap-2 text-xs text-zinc-500 shrink-0">
+                    <span className="hidden sm:inline">User</span>
+                    <select
+                      value={overviewUserId ?? ''}
+                      onChange={(e) => setOverviewUserId(e.target.value || null)}
+                      className="max-w-[160px] sm:max-w-[220px] rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    >
+                      <option value="">All users</option>
+                      {overviewUsers.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setOverviewOpen(false)}
+                  className="w-7 h-7 rounded-md hover:bg-zinc-800 flex items-center justify-center text-zinc-500 hover:text-zinc-300 transition-colors ml-auto shrink-0"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="overflow-y-auto flex-1 min-h-0 px-3 py-2.5 sm:px-4 space-y-3">
+                {overviewLoading ? (
+                  <div className="flex flex-col gap-2">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="space-y-1.5 animate-pulse">
+                        <div className="h-3 w-24 bg-zinc-800 rounded" />
+                        <div className="h-10 bg-zinc-900 rounded-lg" />
+                      </div>
+                    ))}
+                  </div>
+                ) : overviewLogs.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-10 text-zinc-500">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mb-2 opacity-40"><rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+                    <p className="text-sm">No tasks logged this month</p>
+                  </div>
+                ) : filteredOverviewLogs.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-10 text-zinc-500">
+                    <p className="text-sm">No entries for this user</p>
+                  </div>
+                ) : (
+                  (() => {
+                    const byDate = new Map<string, typeof filteredOverviewLogs>()
+                    for (const log of filteredOverviewLogs) {
+                      const existing = byDate.get(log.date) ?? []
+                      existing.push(log)
+                      byDate.set(log.date, existing)
+                    }
+                    const sortedDates = [...byDate.keys()].sort()
+                    return sortedDates.map((dateStr) => {
+                      const entries = byDate.get(dateStr)!
+                      const dateObj = new Date(dateStr + 'T00:00:00')
+                      const dateLabel = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                      return (
+                        <div key={dateStr}>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-xs font-semibold text-primary sm:text-sm">{dateLabel}</span>
+                            <div className="flex-1 h-px bg-zinc-800" />
+                            <span className="text-xs text-zinc-600 tabular-nums">{entries.length}</span>
+                          </div>
+                          <div className="space-y-1.5">
+                            {entries.map((entry) => (
+                              <div key={entry.id} className="bg-zinc-900/80 rounded-lg px-3 py-2 border border-zinc-800/50">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-xs font-medium text-zinc-300 truncate sm:text-sm">
+                                    {entry.profile?.name ?? entry.profile?.email ?? 'Unknown'}
+                                  </span>
+                                  <span className="text-xs text-zinc-600 uppercase tracking-wide font-medium ml-auto shrink-0">
+                                    {entry.status.replace('_', ' ')}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-zinc-400 whitespace-pre-wrap leading-relaxed">{entry.activities}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })
+                  })()
+                )}
+              </div>
+
+              {/* Footer */}
+              {!overviewLoading && overviewLogs.length > 0 && (
+                <div className="px-3 py-2 sm:px-4 border-t border-zinc-800 flex items-center justify-between gap-2 shrink-0">
+                  <span className="text-xs text-zinc-600">
+                    {overviewUserId
+                      ? `${filteredOverviewLogs.length} of ${overviewLogs.length} entries`
+                      : `${overviewLogs.length} ${overviewLogs.length === 1 ? 'entry' : 'entries'} logged`}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setOverviewOpen(false)}
+                    className="text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

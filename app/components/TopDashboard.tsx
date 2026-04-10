@@ -50,12 +50,13 @@ const getStatusTone = (status: ExtendedStatus): StatusTone => {
 interface Props {
   date: string
   initialProfiles: Profile[]
-  initialLogs: DailyLog[]
+  logs: DailyLog[]
+  onLogUpsert: (log: DailyLog) => void
 }
 
 import { motion } from 'framer-motion'
 
-export default function TopDashboard({ date, initialProfiles, initialLogs }: Props) {
+export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert }: Props) {
   const supabase = createClient()
   const router = useRouter()
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -77,8 +78,6 @@ export default function TopDashboard({ date, initialProfiles, initialLogs }: Pro
     router.refresh()
   }
 
-  const [logs, setLogs] = useState<DailyLog[]>(initialLogs)
-
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) setCurrentUserId(user.id)
@@ -98,36 +97,16 @@ export default function TopDashboard({ date, initialProfiles, initialLogs }: Pro
         .eq('id', userLog.id)
         .select()
         .single()
-      if (data) setLogs((prev) => [...prev.filter((l) => l.id !== userLog.id), data])
+      if (data) onLogUpsert(data)
     } else {
       const { data } = await supabase
         .from('daily_logs')
         .upsert({ user_id: currentUserId, date, status: newStatus }, { onConflict: 'user_id,date' })
         .select()
         .single()
-      if (data) setLogs((prev) => [...prev.filter((l) => l.user_id !== currentUserId), data])
+      if (data) onLogUpsert(data)
     }
   }
-
-  useEffect(() => {
-    const channel = supabase
-      .channel(`top-dashboard-${date}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'daily_logs', filter: `date=eq.${date}` },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setLogs((prev) => [...prev, payload.new as DailyLog])
-          } else if (payload.eventType === 'UPDATE') {
-            const updated = payload.new as DailyLog
-            setLogs((prev) => [...prev.filter((l) => l.id !== updated.id), updated])
-          }
-        }
-      )
-      .subscribe()
-
-    return () => { supabase.removeChannel(channel) }
-  }, [supabase, date])
 
   const grouped = STATUS_ORDER.reduce<Record<ExtendedStatus, Profile[]>>(
     (acc, status) => ({ ...acc, [status]: [] }),

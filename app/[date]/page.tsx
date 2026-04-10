@@ -1,7 +1,6 @@
 import { createClient } from '@/app/utils/supabase/server'
 import { redirect } from 'next/navigation'
-import TopDashboard from '@/app/components/TopDashboard'
-import DailyLogs from '@/app/components/DailyLogs'
+import DayClient from '@/app/[date]/DayClient'
 
 const isValidDate = (dateStr: string) => {
   const regex = /^\d{4}-\d{2}-\d{2}$/
@@ -22,9 +21,6 @@ export default async function DayPage({ params }: { params: Promise<{ date: stri
   const { data: logs } = await supabase.from('daily_logs').select('*').eq('date', date)
 
   return (
-    <>
-      <TopDashboard date={date} initialProfiles={profiles ?? []} initialLogs={logs ?? []} />
-      <DailyLogs date={date} initialProfiles={profiles ?? []} initialLogs={logs ?? []} />
-    </>
+    <DayClient date={date} initialProfiles={profiles ?? []} initialLogs={logs ?? []} />
   )
 }
