@@ -8,7 +8,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from '@/components/ui/select'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { cn, getInitials } from '@/lib/utils'
@@ -88,10 +87,6 @@ export default function TopDashboard({ date, initialProfiles, initialLogs }: Pro
 
   const currentProfile = currentUserId ? initialProfiles.find((p) => p.id === currentUserId) : null
   const userLog = currentUserId ? logs.find((l) => l.user_id === currentUserId) : null
-
-  useEffect(() => {
-    if (currentProfile?.name != null) setNameValue(currentProfile.name)
-  }, [currentProfile?.name])
 
   const handleStatusChange = async (newStatus: WorkStatus | null) => {
     if (!currentUserId || !newStatus) return

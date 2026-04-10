@@ -19,7 +19,7 @@ export default function DayPanel() {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const today = new Date()
-  const todayStr = today.toISOString().split('T')[0]
+  const todayStr = today.toLocaleDateString('en-CA')
   const selectedDate = params.date as string
 
   const [viewYear, setViewYear] = useState(today.getFullYear())
@@ -30,10 +30,6 @@ export default function DayPanel() {
   useEffect(() => {
     todayRef.current?.scrollIntoView({ block: 'center', behavior: 'instant' })
   }, [])
-
-  useEffect(() => {
-    setPendingDate(null)
-  }, [selectedDate])
 
   const dates = getDaysInMonth(viewYear, viewMonth)
 
@@ -99,10 +95,10 @@ export default function DayPanel() {
       </div>
       <div className="overflow-y-auto flex-1 px-4 space-y-1 scrollbar-hide pb-6">
         {dates.map((date) => {
-          const dateStr = date.toISOString().split('T')[0]
+          const dateStr = date.toLocaleDateString('en-CA')
           const isToday = dateStr === todayStr
           const isSelected = dateStr === selectedDate
-          const isPendingSelection = pendingDate === dateStr && isPending
+          const isPendingSelection = isPending && pendingDate === dateStr
           const isWeekend = date.getDay() === 0 || date.getDay() === 6
 
           return (
