@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/app/utils/supabase/client'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -49,7 +50,26 @@ import { motion } from 'framer-motion'
 
 export default function TopDashboard({ date, initialProfiles, initialLogs }: Props) {
   const supabase = createClient()
+  const router = useRouter()
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [editingName, setEditingName] = useState(false)
+  const [nameValue, setNameValue] = useState('')
+  const [nameSaving, setNameSaving] = useState(false)
+
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
+
+  async function handleSaveName() {
+    if (!currentUserId) return
+    setNameSaving(true)
+    await supabase.from('profiles').update({ name: nameValue.trim() || null }).eq('id', currentUserId)
+    setNameSaving(false)
+    setEditingName(false)
+    router.refresh()
+  }
+
   const [logs, setLogs] = useState<DailyLog[]>(initialLogs)
 
   useEffect(() => {
@@ -58,7 +78,12 @@ export default function TopDashboard({ date, initialProfiles, initialLogs }: Pro
     })
   }, [supabase])
 
+  const currentProfile = currentUserId ? initialProfiles.find((p) => p.id === currentUserId) : null
   const userLog = currentUserId ? logs.find((l) => l.user_id === currentUserId) : null
+
+  useEffect(() => {
+    if (currentProfile?.name != null) setNameValue(currentProfile.name)
+  }, [currentProfile?.name])
 
   const handleStatusChange = async (newStatus: WorkStatus | null) => {
     if (!currentUserId || !newStatus) return
@@ -74,10 +99,10 @@ export default function TopDashboard({ date, initialProfiles, initialLogs }: Pro
     } else {
       const { data } = await supabase
         .from('daily_logs')
-        .insert({ user_id: currentUserId, date, status: newStatus })
+        .upsert({ user_id: currentUserId, date, status: newStatus }, { onConflict: 'user_id,date' })
         .select()
         .single()
-      if (data) setLogs((prev) => [...prev, data])
+      if (data) setLogs((prev) => [...prev.filter((l) => l.user_id !== currentUserId), data])
     }
   }
 
@@ -148,6 +173,49 @@ export default function TopDashboard({ date, initialProfiles, initialLogs }: Pro
                 <SelectItem value="vacation">Vacation</SelectItem>
               </SelectContent>
             </Select>
+            {editingName ? (
+              <div className="flex items-center gap-2">
+                <input
+                  autoFocus
+                  type="text"
+                  value={nameValue}
+                  onChange={(e) => setNameValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveName()
+                    if (e.key === 'Escape') setEditingName(false)
+                  }}
+                  placeholder="Display name"
+                  className="w-36 rounded-full border border-border/30 bg-zinc-900 px-3 py-2 text-sm outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
+                />
+                <button
+                  onClick={handleSaveName}
+                  disabled={nameSaving}
+                  className="rounded-full bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-all hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {nameSaving ? '…' : 'Save'}
+                </button>
+                <button
+                  onClick={() => setEditingName(false)}
+                  className="rounded-full border border-border/20 bg-zinc-900 px-3 py-2 text-sm font-medium text-muted-foreground transition-all hover:border-border/50 hover:text-foreground"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => { setNameValue(currentProfile?.name ?? ''); setEditingName(true) }}
+                className="rounded-full border border-border/20 bg-zinc-900 px-4 py-2 text-sm font-medium text-muted-foreground transition-all hover:border-border/50 hover:text-foreground"
+                title="Edit display name"
+              >
+                {currentProfile?.name || currentProfile?.email || 'Set name'}
+              </button>
+            )}
+            <button
+              onClick={handleSignOut}
+              className="rounded-full border border-border/20 bg-zinc-900 px-4 py-2 text-sm font-medium text-muted-foreground transition-all hover:border-border/50 hover:text-foreground"
+            >
+              Sign out
+            </button>
           </div>
         )}
       </div>

@@ -116,11 +116,11 @@ export default function DailyLogs({ date, initialProfiles, initialLogs }: Props)
       } else {
         const { data } = await supabase
           .from('daily_logs')
-          .insert({ user_id: currentUserId, date, activities: inputValue })
+          .upsert({ user_id: currentUserId, date, activities: inputValue }, { onConflict: 'user_id,date' })
           .select()
           .single()
         if (data) {
-          setLogs((prev) => [...prev, data])
+          setLogs((prev) => [...prev.filter((l) => l.user_id !== currentUserId), data])
           setSaveStatus('saved')
           setLastSaved(new Date())
         }
@@ -197,8 +197,6 @@ export default function DailyLogs({ date, initialProfiles, initialLogs }: Props)
           const isOwn = currentUserId === profile.id
           const initials = getInitials(profile.name ?? profile.email)
           const tone = STATUS_COLORS[getStatusTone(log?.status ?? null)]
-          const hasNoTasks = !!log && (log.status === 'in_office' || log.status === 'wfh') && !log.activities?.trim()
-
           return (
             <motion.div
               key={profile.id}
@@ -220,9 +218,6 @@ export default function DailyLogs({ date, initialProfiles, initialLogs }: Props)
                     {!log && (
                       <div className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-rose-500 animate-pulse ring-2 ring-zinc-900"></div>
                     )}
-                    {hasNoTasks && (
-                      <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-400 animate-pulse ring-2 ring-zinc-900"></div>
-                    )}
                   </div>
                   <div className="flex-1 flex flex-col gap-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -243,11 +238,6 @@ export default function DailyLogs({ date, initialProfiles, initialLogs }: Props)
                           <Badge className={`${tone.bg} ${tone.text} border-0 shadow-none font-bold uppercase tracking-wider text-[10px] px-2 py-0.5 whitespace-nowrap rounded-full`}>
                             {STATUS_LABELS[log.status]}
                           </Badge>
-                        )}
-                        {hasNoTasks && (
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-300">
-                            No tasks yet
-                          </span>
                         )}
                       </div>
                       {isOwn && (
@@ -296,12 +286,6 @@ export default function DailyLogs({ date, initialProfiles, initialLogs }: Props)
                         <div className="flex items-center gap-2 mt-4 bg-rose-500/10 px-3 py-2 rounded-lg">
                           <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
                           <span className="text-xs text-rose-400 font-medium">Status not logged</span>
-                        </div>
-                      )}
-                      {log && (log.status === 'in_office' || log.status === 'wfh') && !log.activities && (
-                        <div className="flex items-center gap-2 mt-4 bg-amber-500/10 px-3 py-2 rounded-lg">
-                          <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
-                          <span className="text-xs text-amber-400 font-medium">Tasks not logged</span>
                         </div>
                       )}
                     </div>
