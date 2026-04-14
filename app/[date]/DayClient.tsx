@@ -52,7 +52,7 @@ export default function DayClient({ date, initialProfiles, initialLogs }: Props)
   }
 
   return (
-    <>
+    <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
       <TopDashboard
         date={date}
         initialProfiles={initialProfiles}
@@ -65,6 +65,6 @@ export default function DayClient({ date, initialProfiles, initialLogs }: Props)
         logs={logs}
         onLogUpsert={handleLogUpsert}
       />
-    </>
+    </div>
   )
 }

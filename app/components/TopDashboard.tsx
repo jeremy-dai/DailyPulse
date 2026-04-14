@@ -131,9 +131,9 @@ export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert 
   }).length
 
   return (
-    <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-xl border-b border-border/10 p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">{displayDate}</h1>
+    <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-xl border-b border-border/10 p-3">
+      <div className="flex justify-between items-center mb-3">
+        <h1 className="text-lg font-bold tracking-tight text-foreground">{displayDate}</h1>
         {currentUserId && (
           <div className="flex items-center gap-3">
             <Select
@@ -213,21 +213,21 @@ export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert 
         )}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
         {STATUS_ORDER.map((status) => (
           <motion.div
             whileHover={{ y: -2, scale: 1.02 }}
             transition={{ type: 'spring', stiffness: 300, damping: 20 }}
             key={status}
-            className={`rounded-3xl bg-zinc-900/90 border border-white/10 shadow-sm transition-colors hover:border-white/20`}
+            className={`rounded-2xl bg-zinc-900/90 border border-white/10 shadow-sm transition-colors hover:border-white/20`}
           >
-            <div className={`px-4 py-3 flex items-center justify-between`}>
+            <div className={`px-3 py-2 flex items-center justify-between`}>
               <span className="text-xs font-semibold text-zinc-400">{STATUS_LABELS[status]}</span>
               <Badge className={`bg-black/20 ${STATUS_COLORS[getStatusTone(status)].text} text-xs border-0 px-2 py-0 shadow-none font-bold rounded-full`}>
                 {grouped[status].length}
               </Badge>
             </div>
-            <div className="px-4 pt-2 pb-4 min-h-[4.5rem]">
+            <div className="px-3 pt-1 pb-3 min-h-[3.5rem]">
               <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
                 {grouped[status].map((profile) => {
                   const userLog = logs.find((l) => l.user_id === profile.id)
@@ -269,7 +269,7 @@ export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert 
         ))}
       </div>
       {(unknownCount > 0 || missingTasksCount > 0) && (
-        <div className="mt-4 flex flex-wrap gap-3">
+        <div className="mt-2 flex flex-wrap gap-2">
           {unknownCount > 0 && (
             <div className="rounded-full border border-rose-500/50 bg-rose-500/20 px-3 py-1 text-xs font-semibold text-rose-200">
               Warning: {unknownCount} team member{unknownCount === 1 ? '' : 's'} not logged
