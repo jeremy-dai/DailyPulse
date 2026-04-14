@@ -44,6 +44,11 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  if (user && isLoginPage) {
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' })
+    return NextResponse.redirect(new URL(`/${today}`, request.url))
+  }
+
   return supabaseResponse
 }
 
