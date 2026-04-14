@@ -17,7 +17,7 @@ export default async function DayPage({ params }: { params: Promise<{ date: stri
   }
 
   const supabase = await createClient()
-  const { data: profiles } = await supabase.from('profiles').select('*')
+  const { data: profiles } = await supabase.from('profiles').select('*').order('created_at')
   const { data: logs } = await supabase.from('daily_logs').select('*').eq('date', date)
 
   return (

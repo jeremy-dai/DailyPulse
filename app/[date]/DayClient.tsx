@@ -18,7 +18,7 @@ const upsertLog = (logs: DailyLog[], nextLog: DailyLog) => {
 }
 
 export default function DayClient({ date, initialProfiles, initialLogs }: Props) {
-  const supabase = createClient()
+  const [supabase] = useState(() => createClient())
   const [logs, setLogs] = useState<DailyLog[]>(initialLogs)
 
   useEffect(() => {
