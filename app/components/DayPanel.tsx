@@ -115,6 +115,7 @@ export default function DayPanel() {
   }
 
   return (
+    <>
     <div className="w-64 bg-background border-r border-border/10 h-screen sticky top-0 flex flex-col shrink-0 z-20">
       <div className="p-6">
         <h1 className="text-xl font-bold flex items-center gap-2 text-primary">
@@ -200,6 +201,7 @@ export default function DayPanel() {
         })}
       </div>
 
+    </div>
       <AnimatePresence>
         {overviewOpen && (
           <motion.div
@@ -337,6 +339,6 @@ export default function DayPanel() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </>
   )
 }

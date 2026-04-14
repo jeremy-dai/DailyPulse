@@ -39,6 +39,37 @@ interface Props {
   onLogUpsert: (log: DailyLog) => void
 }
 
+function ScrollFade({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [fade, setFade] = useState(false)
+
+  const check = () => {
+    const el = ref.current
+    if (!el) return
+    setFade(el.scrollHeight > el.clientHeight + 2 && el.scrollTop + el.clientHeight < el.scrollHeight - 2)
+  }
+
+  useEffect(() => {
+    check()
+    const el = ref.current
+    if (!el) return
+    const ro = new ResizeObserver(check)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  return (
+    <div className="relative h-16">
+      <div ref={ref} className="h-full overflow-y-auto" onScroll={check}>
+        {children}
+      </div>
+      {fade && (
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-5 bg-gradient-to-t from-zinc-900 to-transparent" />
+      )}
+    </div>
+  )
+}
+
 export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: Props) {
   const supabase = createClient()
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -259,8 +290,7 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
                 </CardHeader>
                 <CardContent className="relative z-10 px-2.5 pb-2 pt-0">
                   <div className={cn('border-t mb-1.5', tone.border)} />
-                  <div className="relative h-16">
-                  <div className="h-full overflow-y-auto">
+                  <ScrollFade>
                     {isOwn ? (
                       <textarea
                         className="w-full h-full resize-none bg-transparent px-0 py-0 text-xs leading-5 outline-none placeholder:text-muted-foreground/60"
@@ -283,9 +313,7 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
                           : <span className="text-zinc-500 italic">No tasks logged yet.</span>}
                       </p>
                     )}
-                  </div>
-                  <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-5 bg-gradient-to-t from-zinc-900 to-transparent" />
-                  </div>
+                  </ScrollFade>
                 </CardContent>
               </Card>
             </motion.div>
