@@ -9,8 +9,7 @@ import {
   SelectItem,
   SelectTrigger,
 } from '@/components/ui/select'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { cn, getInitials } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import type { Profile, DailyLog, WorkStatus } from '@/types/supabase'
 
 type ExtendedStatus = WorkStatus | 'unknown'
@@ -229,39 +228,25 @@ export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert 
               </Badge>
             </div>
             <div className="px-4 pt-2 pb-4 min-h-[4.5rem]">
-              <div className="flex flex-wrap gap-1.5">
+              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
                 {grouped[status].map((profile) => {
                   const userLog = logs.find((l) => l.user_id === profile.id)
                   const hasNoTasks = !userLog?.activities?.trim() && (status === 'in_office' || status === 'wfh')
                   const tone = STATUS_COLORS[getStatusTone(status)]
-                  const avatarLabel = getInitials(profile.name ?? profile.email)
-                  
+                  const displayName = profile.name || profile.email.split('@')[0]
+
                   return (
-                    <div key={profile.id} className="relative group hover:z-50">
-                      <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 rounded-full border border-white/10 bg-black/90 px-2 py-1 text-[10px] font-medium text-white opacity-0 shadow-lg transition-all duration-200 group-hover:-translate-y-1 group-hover:opacity-100 whitespace-nowrap">
-                        {profile.email}
-                      </div>
-                      <Avatar 
-                        className={cn(
-                          'h-8 w-8 ring-2 shadow-sm transition-transform hover:scale-110',
-                          tone.ring,
-                          status === 'unknown' && 'animate-pulse',
-                          hasNoTasks && 'ring-amber-400/80'
-                        )}
-                      >
-                        <AvatarFallback className={cn(
-                          'text-[10px] font-medium',
-                          tone.fallback
-                        )}>
-                          {avatarLabel}
-                        </AvatarFallback>
-                      </Avatar>
-                      {status === 'unknown' && (
-                        <div className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-rose-500 animate-pulse ring-2 ring-zinc-900"></div>
+                    <div
+                      key={profile.id}
+                      title={profile.email}
+                      className={cn(
+                        'truncate text-xs py-0.5 font-medium',
+                        tone.text,
+                        hasNoTasks && 'text-amber-300',
+                        status === 'unknown' && 'text-rose-300 animate-pulse'
                       )}
-                      {hasNoTasks && (
-                        <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-400 animate-pulse ring-2 ring-zinc-900"></div>
-                      )}
+                    >
+                      {displayName}
                     </div>
                   )
                 })}
