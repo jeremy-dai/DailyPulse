@@ -20,18 +20,17 @@ export default function Loading() {
           {dashboardCards.map((card) => (
             <div
               key={card}
-              className="rounded-3xl border border-white/10 bg-zinc-900/90 p-4 shadow-sm"
+              className="rounded-3xl border border-border bg-card p-4 shadow-sm"
             >
               <div className="mb-4 flex items-center justify-between">
-                <Skeleton className="h-3 w-20 rounded-full" />
-                <Skeleton className="h-5 w-8 rounded-full" />
+                <Skeleton className="h-4 w-20 bg-muted" />
+                <Skeleton className="h-5 w-8 rounded-full bg-muted" />
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Skeleton className="h-8 w-8 rounded-full" />
-                <Skeleton className="h-8 w-8 rounded-full" />
-                <Skeleton className="h-8 w-8 rounded-full" />
+              <div className="space-y-3">
+                {[1, 2].map((item) => (
+                  <Skeleton key={item} className="h-3 w-full bg-muted" />
+                ))}
               </div>
-              <Skeleton className="mt-4 h-3 w-28 rounded-full" />
             </div>
           ))}
         </div>

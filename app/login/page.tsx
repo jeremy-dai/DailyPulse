@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/app/utils/supabase/client'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 type Flow = 'login' | 'signup'
 
@@ -74,9 +75,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#0a0a0b]">
+    <div className="flex min-h-screen w-full bg-background text-foreground font-sans">
       {/* ── Left brand panel ── */}
-      <div className="hidden lg:flex lg:w-1/2 xl:w-3/5 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 xl:w-3/5 relative overflow-hidden bg-muted/20">
         {/* Animated mesh gradient */}
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/20 via-transparent to-cyan-500/10" />
@@ -96,19 +97,24 @@ export default function LoginPage() {
 
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-start w-full p-12 xl:p-16">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-400 shadow-lg shadow-emerald-500/20">
-              <PulseIcon className="h-4.5 w-4.5 text-black" />
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 shadow-lg shadow-emerald-500/20">
+                <PulseIcon className="h-4.5 w-4.5 text-white" />
+              </div>
+              <span className="text-lg font-semibold text-foreground tracking-tight">DailyPulse</span>
             </div>
-            <span className="text-lg font-semibold text-white tracking-tight">DailyPulse</span>
+            
+            <ThemeToggle />
           </div>
 
           {/* Hero */}
           <div className="max-w-lg mx-auto text-center flex-1 flex flex-col justify-center">
-            <h1 className="text-5xl xl:text-6xl font-bold tracking-tight text-white leading-[1.1]">
+            <h1 className="text-5xl xl:text-6xl font-bold tracking-tight text-foreground leading-[1.1]">
               Know your team&apos;s pulse,{' '}
-              <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-emerald-500 to-cyan-500 bg-clip-text text-transparent">
                 every day.
               </span>
             </h1>
@@ -123,10 +129,10 @@ export default function LoginPage() {
                 { icon: <BellIcon />, label: 'Smart nudges, not noise' },
               ].map(({ icon, label }) => (
                 <div key={label} className="flex items-center gap-3 group">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/[0.06] border border-white/[0.06] text-emerald-400 transition-colors group-hover:bg-emerald-400/10">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted/50 border border-border text-emerald-400 transition-colors group-hover:bg-emerald-400/10">
                     {icon}
                   </div>
-                  <span className="text-sm text-zinc-300">{label}</span>
+                  <span className="text-sm text-muted-foreground">{label}</span>
                 </div>
               ))}
             </div>
@@ -136,24 +142,25 @@ export default function LoginPage() {
       </div>
 
       {/* ── Right form panel ── */}
-      <div className="flex flex-1 flex-col items-center justify-center p-6 sm:p-10 lg:p-16 bg-[#0f0f11] lg:border-l border-white/[0.06]">
+      <div className="flex flex-1 flex-col items-center justify-center p-6 sm:p-10 lg:p-16 bg-background lg:border-l border-border">
         <div className="w-full max-w-[380px]">
-          {/* Mobile logo */}
-          <div className="mb-10 lg:hidden">
+          {/* Mobile logo & theme toggle */}
+          <div className="mb-10 lg:hidden flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-400 shadow-lg shadow-emerald-500/20">
-                <PulseIcon className="h-4.5 w-4.5 text-black" />
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 shadow-lg shadow-emerald-500/20">
+                <PulseIcon className="h-4.5 w-4.5 text-white" />
               </div>
-              <span className="text-lg font-semibold text-white tracking-tight">DailyPulse</span>
+              <span className="text-lg font-semibold text-foreground tracking-tight">DailyPulse</span>
             </div>
+            <ThemeToggle />
           </div>
 
           {/* Heading */}
           <div className="mb-8">
-            <h2 className="text-2xl font-semibold tracking-tight text-white">
+            <h2 className="text-2xl font-semibold tracking-tight text-foreground">
               {flow === 'login' ? 'Welcome back' : 'Create your account'}
             </h2>
-            <p className="mt-2 text-sm text-zinc-500">
+            <p className="mt-2 text-sm text-muted-foreground">
               {flow === 'login'
                 ? 'Enter your credentials to access your dashboard.'
                 : 'Start your free account and get your team aligned.'}
@@ -163,7 +170,7 @@ export default function LoginPage() {
           {/* Google */}
           <button
             onClick={handleGoogleLogin}
-            className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-white transition-all hover:bg-white/[0.06] hover:border-white/[0.12] active:scale-[0.98]"
+            className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground transition-all hover:bg-muted hover:border-border/80 active:scale-[0.98]"
           >
             <GoogleIcon />
             Continue with Google
@@ -171,16 +178,16 @@ export default function LoginPage() {
 
           {/* Divider */}
           <div className="my-6 flex items-center gap-3">
-            <div className="h-px flex-1 bg-white/[0.06]" />
-            <span className="text-xs text-zinc-600 uppercase tracking-wider">or</span>
-            <div className="h-px flex-1 bg-white/[0.06]" />
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs text-muted-foreground uppercase tracking-wider">or</span>
+            <div className="h-px flex-1 bg-border" />
           </div>
 
           {/* Email form */}
           <form className="space-y-4" onSubmit={flow === 'login' ? handleLogin : handleSignUp}>
             {flow === 'signup' && (
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-zinc-400">
+                <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
                   Display name
                 </label>
                 <input
@@ -195,7 +202,7 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-zinc-400">Email</label>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Email</label>
               <input
                 type="email"
                 placeholder="you@company.com"
@@ -207,7 +214,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="mb-1.5 block text-xs font-medium text-zinc-400">Password</label>
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Password</label>
               <input
                 type="password"
                 placeholder="••••••••"
@@ -220,7 +227,7 @@ export default function LoginPage() {
 
             {flow === 'login' && (
               <div className="flex justify-end">
-                <button type="button" className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+                <button type="button" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
                   Forgot password?
                 </button>
               </div>
@@ -229,7 +236,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-emerald-400 py-2.5 text-sm font-semibold text-black transition-all hover:bg-emerald-300 active:scale-[0.98] disabled:opacity-50 shadow-lg shadow-emerald-500/20"
+              className="w-full rounded-xl bg-emerald-500 py-2.5 text-sm font-semibold text-white transition-all hover:bg-emerald-600 active:scale-[0.98] disabled:opacity-50 shadow-lg shadow-emerald-500/20"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -255,23 +262,23 @@ export default function LoginPage() {
           )}
 
           {/* Switch flow */}
-          <p className="mt-6 text-center text-sm text-zinc-500">
+          <p className="mt-6 text-center text-sm text-muted-foreground">
             {flow === 'login' ? "Don't have an account? " : 'Already have an account? '}
             <button
               type="button"
               onClick={() => switchFlow(flow === 'login' ? 'signup' : 'login')}
-              className="text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
+              className="text-emerald-500 hover:text-emerald-400 font-medium transition-colors"
             >
               {flow === 'login' ? 'Sign up' : 'Sign in'}
             </button>
           </p>
 
           {/* Terms */}
-          <p className="mt-8 text-center text-[11px] text-zinc-600 leading-relaxed">
+          <p className="mt-8 text-center text-[11px] text-muted-foreground leading-relaxed">
             By continuing, you agree to our{' '}
-            <span className="text-zinc-500 hover:text-zinc-400 cursor-pointer transition-colors">Terms of Service</span>
+            <span className="text-foreground hover:underline cursor-pointer transition-colors">Terms of Service</span>
             {' '}and{' '}
-            <span className="text-zinc-500 hover:text-zinc-400 cursor-pointer transition-colors">Privacy Policy</span>
+            <span className="text-foreground hover:underline cursor-pointer transition-colors">Privacy Policy</span>
           </p>
         </div>
       </div>
@@ -280,7 +287,7 @@ export default function LoginPage() {
 }
 
 const inputCls =
-  'w-full rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-2.5 text-sm text-white outline-none transition-all placeholder:text-zinc-600 focus:border-emerald-400/40 focus:ring-2 focus:ring-emerald-400/10 focus:bg-white/[0.05] disabled:opacity-50'
+  'w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground focus:border-emerald-400/40 focus:ring-2 focus:ring-emerald-400/10 focus:bg-muted disabled:opacity-50'
 
 function Spinner() {
   return (

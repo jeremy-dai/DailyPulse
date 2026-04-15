@@ -127,24 +127,24 @@ export default function DayPanel() {
       </div>
       <div className="px-6 pb-4">
 
-        <div className="flex justify-between items-center bg-zinc-900 rounded-full p-1 mb-2">
+        <div className="flex justify-between items-center bg-muted rounded-full p-1 mb-2">
           <button
             onClick={goToPrevMonth}
-            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-zinc-800 text-muted-foreground transition-colors"
+            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-background text-muted-foreground transition-colors"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
           </button>
           <div className="text-sm font-medium">{monthLabel}</div>
           <button
             onClick={goToNextMonth}
-            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-zinc-800 text-muted-foreground transition-colors"
+            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-background text-muted-foreground transition-colors"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
           </button>
         </div>
         <button
           onClick={openOverview}
-          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs font-medium transition-colors border border-zinc-800 hover:border-zinc-700"
+          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-muted hover:bg-background text-muted-foreground hover:text-foreground text-xs font-medium transition-colors border border-border hover:border-foreground/10"
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
           Overview
@@ -167,12 +167,12 @@ export default function DayPanel() {
               className={cn(
                 'relative w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all duration-200 cursor-pointer group',
                 isSelected || isPendingSelection
-                  ? 'text-black font-semibold'
+                  ? 'text-primary-foreground font-semibold'
                   : isToday
-                    ? 'text-primary font-semibold hover:bg-zinc-900'
+                    ? 'text-primary font-semibold hover:bg-muted'
                     : isWeekend
-                      ? 'text-zinc-500 hover:bg-zinc-900 hover:text-zinc-400'
-                      : 'text-zinc-400 hover:bg-zinc-900 hover:text-foreground'
+                      ? 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >
               {(isSelected || isPendingSelection) && (
@@ -187,7 +187,7 @@ export default function DayPanel() {
                 />
               )}
               <div className="relative z-10 flex items-center gap-4">
-                <div className={cn("w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold", isSelected ? "bg-black/10" : "bg-zinc-900")}>
+                <div className={cn("w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold", isSelected ? "bg-black/10 dark:bg-black/20 text-primary-foreground" : "bg-muted")}>
                   {date.getDate()}
                 </div>
                 <div className="flex flex-col items-start">
@@ -216,27 +216,27 @@ export default function DayPanel() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-              className="bg-zinc-950 border border-zinc-800 rounded-xl w-full max-w-5xl h-[min(92vh,900px)] max-h-[92vh] flex flex-col shadow-2xl"
+              className="bg-card border border-border rounded-xl w-full max-w-5xl h-[min(92vh,900px)] max-h-[92vh] flex flex-col shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3 px-3 py-2.5 sm:px-4 border-b border-zinc-800 shrink-0">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 px-3 py-2.5 sm:px-4 border-b border-border shrink-0">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <div className="w-6 h-6 rounded-md bg-primary/10 border border-primary/30 flex items-center justify-center shrink-0">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
                   </div>
                   <div className="min-w-0">
                     <h2 className="text-sm font-semibold text-foreground leading-tight sm:text-base">Monthly Overview</h2>
-                    <p className="text-xs text-zinc-500 leading-tight">{monthLabel}</p>
+                    <p className="text-xs text-muted-foreground leading-tight">{monthLabel}</p>
                   </div>
                 </div>
                 {!overviewLoading && overviewUsers.length > 0 && (
-                  <label className="flex items-center gap-2 text-xs text-zinc-500 shrink-0">
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
                     <span className="hidden sm:inline">User</span>
                     <select
                       value={overviewUserId ?? ''}
                       onChange={(e) => setOverviewUserId(e.target.value || null)}
-                      className="max-w-[160px] sm:max-w-[220px] rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                      className="max-w-[160px] sm:max-w-[220px] rounded-md border border-border bg-muted px-2.5 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
                     >
                       <option value="">All users</option>
                       {overviewUsers.map((u) => (
@@ -250,7 +250,7 @@ export default function DayPanel() {
                 <button
                   type="button"
                   onClick={() => setOverviewOpen(false)}
-                  className="w-7 h-7 rounded-md hover:bg-zinc-800 flex items-center justify-center text-zinc-500 hover:text-zinc-300 transition-colors ml-auto shrink-0"
+                  className="w-7 h-7 rounded-md hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors ml-auto shrink-0"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                 </button>
@@ -262,18 +262,18 @@ export default function DayPanel() {
                   <div className="flex flex-col gap-2">
                     {[...Array(5)].map((_, i) => (
                       <div key={i} className="space-y-1.5 animate-pulse">
-                        <div className="h-3 w-24 bg-zinc-800 rounded" />
-                        <div className="h-10 bg-zinc-900 rounded-lg" />
+                        <div className="h-3 w-24 bg-muted rounded" />
+                        <div className="h-10 bg-muted rounded-lg" />
                       </div>
                     ))}
                   </div>
                 ) : overviewLogs.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-10 text-zinc-500">
+                  <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mb-2 opacity-40"><rect width="18" height="18" x="3" y="4" rx="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
                     <p className="text-sm">No tasks logged this month</p>
                   </div>
                 ) : filteredOverviewLogs.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-10 text-zinc-500">
+                  <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
                     <p className="text-sm">No entries for this user</p>
                   </div>
                 ) : (
@@ -293,21 +293,21 @@ export default function DayPanel() {
                         <div key={dateStr}>
                           <div className="flex items-center gap-2 mb-1.5">
                             <span className="text-xs font-semibold text-primary sm:text-sm">{dateLabel}</span>
-                            <div className="flex-1 h-px bg-zinc-800" />
-                            <span className="text-xs text-zinc-600 tabular-nums">{entries.length}</span>
+                            <div className="flex-1 h-px bg-border" />
+                            <span className="text-xs text-muted-foreground tabular-nums">{entries.length}</span>
                           </div>
                           <div className="space-y-1.5">
                             {entries.map((entry) => (
-                              <div key={entry.id} className="bg-zinc-900/80 rounded-lg px-3 py-2 border border-zinc-800/50">
+                              <div key={entry.id} className="bg-muted/50 rounded-lg px-3 py-2 border border-border/50">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-xs font-medium text-zinc-300 truncate sm:text-sm">
+                                  <span className="text-xs font-medium text-foreground/80 truncate sm:text-sm">
                                     {entry.profile?.name ?? entry.profile?.email ?? 'Unknown'}
                                   </span>
-                                  <span className="text-xs text-zinc-600 uppercase tracking-wide font-medium ml-auto shrink-0">
+                                  <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium ml-auto shrink-0">
                                     {entry.status.replace('_', ' ')}
                                   </span>
                                 </div>
-                                <p className="text-sm text-zinc-400 whitespace-pre-wrap leading-relaxed">{entry.activities}</p>
+                                <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{entry.activities}</p>
                               </div>
                             ))}
                           </div>
@@ -320,8 +320,8 @@ export default function DayPanel() {
 
               {/* Footer */}
               {!overviewLoading && overviewLogs.length > 0 && (
-                <div className="px-3 py-2 sm:px-4 border-t border-zinc-800 flex items-center justify-between gap-2 shrink-0">
-                  <span className="text-xs text-zinc-600">
+                <div className="px-3 py-2 sm:px-4 border-t border-border flex items-center justify-between gap-2 shrink-0">
+                  <span className="text-xs text-muted-foreground">
                     {overviewUserId
                       ? `${filteredOverviewLogs.length} of ${overviewLogs.length} entries`
                       : `${overviewLogs.length} ${overviewLogs.length === 1 ? 'entry' : 'entries'} logged`}
@@ -329,7 +329,7 @@ export default function DayPanel() {
                   <button
                     type="button"
                     onClick={() => setOverviewOpen(false)}
-                    className="text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Close
                   </button>

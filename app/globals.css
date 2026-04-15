@@ -81,6 +81,30 @@
   --sidebar-accent-foreground: oklch(0.145 0.02 250);
   --sidebar-border: oklch(0.922 0.01 250);
   --sidebar-ring: oklch(0.145 0.02 250);
+
+  --status-emerald-bg: var(--color-emerald-500);
+  --status-emerald-text: var(--color-emerald-700);
+  --status-emerald-border: var(--color-emerald-500);
+  --status-emerald-dot: var(--color-emerald-500);
+
+  --status-sky-bg: var(--color-sky-500);
+  --status-sky-text: var(--color-sky-700);
+  --status-sky-border: var(--color-sky-500);
+  --status-sky-dot: var(--color-sky-500);
+
+  --status-zinc-bg: var(--color-zinc-500);
+  --status-zinc-text: var(--color-zinc-700);
+  --status-zinc-border: var(--color-zinc-500);
+  --status-zinc-dot: var(--color-zinc-500);
+
+  --status-rose-bg: var(--color-rose-500);
+  --status-rose-text: var(--color-rose-700);
+  --status-rose-border: var(--color-rose-500);
+  --status-rose-dot: var(--color-rose-500);
+
+  --status-amber-bg: var(--color-amber-500);
+  --status-amber-border: var(--color-amber-500);
+  --status-amber-text: var(--color-amber-700);
 }
 
 .dark {
@@ -116,6 +140,30 @@
   --sidebar-border: #3f3f46;
   --sidebar-ring: #86efac;
   --radius: 1rem;
+
+  --status-emerald-bg: var(--color-emerald-500);
+  --status-emerald-text: var(--color-emerald-200);
+  --status-emerald-border: var(--color-emerald-500);
+  --status-emerald-dot: var(--color-emerald-400);
+
+  --status-sky-bg: var(--color-sky-500);
+  --status-sky-text: var(--color-sky-200);
+  --status-sky-border: var(--color-sky-500);
+  --status-sky-dot: var(--color-sky-400);
+
+  --status-zinc-bg: var(--color-zinc-500);
+  --status-zinc-text: var(--color-zinc-200);
+  --status-zinc-border: var(--color-zinc-500);
+  --status-zinc-dot: var(--color-zinc-400);
+
+  --status-rose-bg: var(--color-rose-500);
+  --status-rose-text: var(--color-rose-200);
+  --status-rose-border: var(--color-rose-500);
+  --status-rose-dot: var(--color-rose-400);
+
+  --status-amber-bg: var(--color-amber-500);
+  --status-amber-border: var(--color-amber-500);
+  --status-amber-text: var(--color-amber-300);
 }
 
 @layer base {

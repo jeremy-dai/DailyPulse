@@ -12,10 +12,10 @@ import { motion } from 'framer-motion'
 type StatusTone = 'in_office' | 'wfh' | 'off' | 'unknown'
 
 const STATUS_COLORS: Record<StatusTone, { bg: string, text: string, border: string, ring: string, fallback: string, dot: string, inputOutline: string }> = {
-  in_office: { bg: 'bg-emerald-500/20', text: 'text-emerald-200', border: 'border-emerald-500/50', ring: 'ring-emerald-500/80', fallback: 'bg-emerald-500/20 text-emerald-100', dot: 'bg-emerald-400', inputOutline: 'border-emerald-500/50 focus:border-emerald-400/80 focus:ring-emerald-500/20' },
-  wfh: { bg: 'bg-sky-500/20', text: 'text-sky-200', border: 'border-sky-500/50', ring: 'ring-sky-500/80', fallback: 'bg-sky-500/20 text-sky-100', dot: 'bg-sky-400', inputOutline: 'border-sky-500/50 focus:border-sky-400/80 focus:ring-sky-500/20' },
-  off: { bg: 'bg-zinc-500/20', text: 'text-zinc-200', border: 'border-zinc-500/50', ring: 'ring-zinc-500/80', fallback: 'bg-zinc-700 text-zinc-100', dot: 'bg-zinc-400', inputOutline: 'border-zinc-500/50 focus:border-zinc-400/80 focus:ring-zinc-500/20' },
-  unknown: { bg: 'bg-rose-500/20', text: 'text-rose-200', border: 'border-rose-500/50', ring: 'ring-rose-500/80', fallback: 'bg-rose-500/20 text-rose-100', dot: 'bg-rose-400', inputOutline: 'border-rose-500/50 focus:border-rose-400/80 focus:ring-rose-500/20' },
+  in_office: { bg: 'bg-[var(--status-emerald-bg)]/20', text: 'text-[var(--status-emerald-text)]', border: 'border-[var(--status-emerald-border)]/50', ring: 'ring-[var(--status-emerald-bg)]/80', fallback: 'bg-[var(--status-emerald-bg)]/20 text-[var(--status-emerald-text)]', dot: 'bg-[var(--status-emerald-dot)]', inputOutline: 'border-[var(--status-emerald-border)]/50 focus:border-[var(--status-emerald-border)]/80 focus:ring-[var(--status-emerald-bg)]/20' },
+  wfh: { bg: 'bg-[var(--status-sky-bg)]/20', text: 'text-[var(--status-sky-text)]', border: 'border-[var(--status-sky-border)]/50', ring: 'ring-[var(--status-sky-bg)]/80', fallback: 'bg-[var(--status-sky-bg)]/20 text-[var(--status-sky-text)]', dot: 'bg-[var(--status-sky-dot)]', inputOutline: 'border-[var(--status-sky-border)]/50 focus:border-[var(--status-sky-border)]/80 focus:ring-[var(--status-sky-bg)]/20' },
+  off: { bg: 'bg-[var(--status-zinc-bg)]/20', text: 'text-[var(--status-zinc-text)]', border: 'border-[var(--status-zinc-border)]/50', ring: 'ring-[var(--status-zinc-bg)]/80', fallback: 'bg-[var(--status-zinc-bg)]/20 text-[var(--status-zinc-text)]', dot: 'bg-[var(--status-zinc-dot)]', inputOutline: 'border-[var(--status-zinc-border)]/50 focus:border-[var(--status-zinc-border)]/80 focus:ring-[var(--status-zinc-bg)]/20' },
+  unknown: { bg: 'bg-[var(--status-rose-bg)]/20', text: 'text-[var(--status-rose-text)]', border: 'border-[var(--status-rose-border)]/50', ring: 'ring-[var(--status-rose-bg)]/80', fallback: 'bg-[var(--status-rose-bg)]/20 text-[var(--status-rose-text)]', dot: 'bg-[var(--status-rose-dot)]', inputOutline: 'border-[var(--status-rose-border)]/50 focus:border-[var(--status-rose-border)]/80 focus:ring-[var(--status-rose-bg)]/20' },
 }
 
 const STATUS_LABELS: Record<WorkStatus, string> = {
@@ -64,7 +64,7 @@ function ScrollFade({ children }: { children: React.ReactNode }) {
         {children}
       </div>
       {fade && (
-        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-5 bg-gradient-to-t from-zinc-900 to-transparent" />
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-5 bg-gradient-to-t from-card to-transparent" />
       )}
     </div>
   )
@@ -186,10 +186,10 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
 
   const getSaveStatusColor = () => {
     switch (saveStatus) {
-      case 'saving': return 'text-yellow-300'
-      case 'saved': return 'text-emerald-300'
-      case 'error': return 'text-red-300'
-      default: return 'text-zinc-400'
+      case 'saving': return 'text-[var(--status-amber-text)]'
+      case 'saved': return 'text-[var(--status-emerald-text)]'
+      case 'error': return 'text-[var(--status-rose-text)]'
+      default: return 'text-muted-foreground'
     }
   }
 
@@ -231,7 +231,7 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
               className=""
             >
               <Card className={cn(
-                'group relative overflow-hidden border bg-zinc-900 shadow-sm transition-all duration-300 hover:shadow-md flex flex-col w-full',
+                'group relative overflow-hidden border bg-card shadow-sm transition-all duration-300 hover:shadow-md flex flex-col w-full',
                 tone.border,
                 isOwn && 'shadow-primary/10'
               )} size="sm">
@@ -241,7 +241,7 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
                       <AvatarFallback className={cn('font-medium text-xs', tone.fallback)}>{initials}</AvatarFallback>
                     </Avatar>
                     {!log && (
-                      <div className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-rose-500 animate-pulse ring-2 ring-zinc-900"></div>
+                      <div className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-[var(--status-rose-dot)] animate-pulse ring-2 ring-card"></div>
                     )}
                   </div>
                   <div className="flex-1 flex flex-col gap-0.5 min-w-0">
@@ -255,7 +255,7 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
                     </div>
                     <div className="flex items-center justify-between gap-2">
                       {!log ? (
-                        <Badge className="border-0 bg-rose-500/20 text-rose-200 shadow-none font-bold uppercase tracking-wider text-[9px] px-1.5 py-0 whitespace-nowrap rounded-full animate-pulse ring-1 ring-rose-500/30">
+                        <Badge className="border-0 bg-[var(--status-rose-bg)]/20 text-[var(--status-rose-text)] shadow-none font-bold uppercase tracking-wider text-[9px] px-1.5 py-0 whitespace-nowrap rounded-full animate-pulse ring-1 ring-[var(--status-rose-border)]/30">
                           Not Logged
                         </Badge>
                       ) : (
@@ -297,7 +297,7 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
                       <p className="whitespace-pre-wrap text-xs leading-5 text-foreground/90">
                         {log?.activities?.trim()
                           ? log.activities
-                          : <span className="text-zinc-500 italic">No tasks logged yet.</span>}
+                          : <span className="text-muted-foreground italic">No tasks logged yet.</span>}
                       </p>
                     )}
                   </ScrollFade>

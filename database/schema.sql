@@ -58,10 +58,6 @@ create policy "Users can update their own logs"
 on daily_logs for update to authenticated
 using (auth.uid() = user_id);
 
--- Enable realtime updates (for instant status refreshes)
-alter publication supabase_realtime add table daily_logs;
-
-
 -- Block signups from any email not in your company domain
 create function public.check_email_domain()
 returns trigger as $$

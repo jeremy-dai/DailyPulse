@@ -11,15 +11,16 @@ import {
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import type { Profile, DailyLog, WorkStatus } from '@/types/supabase'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 type ExtendedStatus = WorkStatus | 'unknown'
 type StatusTone = 'in_office' | 'wfh' | 'off' | 'unknown'
 
 const STATUS_COLORS: Record<StatusTone, { bg: string, text: string, border: string, ring: string, dot: string, fallback: string }> = {
-  in_office: { bg: 'bg-emerald-500/20', text: 'text-emerald-200', border: 'border-emerald-500/50', ring: 'ring-emerald-500/80', dot: 'bg-emerald-400', fallback: 'bg-emerald-500/20 text-emerald-100' },
-  wfh: { bg: 'bg-sky-500/20', text: 'text-sky-200', border: 'border-sky-500/50', ring: 'ring-sky-500/80', dot: 'bg-sky-400', fallback: 'bg-sky-500/20 text-sky-100' },
-  off: { bg: 'bg-zinc-500/20', text: 'text-zinc-200', border: 'border-zinc-500/50', ring: 'ring-zinc-500/80', dot: 'bg-zinc-400', fallback: 'bg-zinc-700 text-zinc-100' },
-  unknown: { bg: 'bg-rose-500/20', text: 'text-rose-200', border: 'border-rose-500/50', ring: 'ring-rose-500/80', dot: 'bg-rose-400', fallback: 'bg-rose-500/20 text-rose-100' },
+  in_office: { bg: 'bg-[var(--status-emerald-bg)]/20', text: 'text-[var(--status-emerald-text)]', border: 'border-[var(--status-emerald-border)]/50', ring: 'ring-[var(--status-emerald-bg)]/80', dot: 'bg-[var(--status-emerald-dot)]', fallback: 'bg-[var(--status-emerald-bg)]/20 text-[var(--status-emerald-text)]' },
+  wfh: { bg: 'bg-[var(--status-sky-bg)]/20', text: 'text-[var(--status-sky-text)]', border: 'border-[var(--status-sky-border)]/50', ring: 'ring-[var(--status-sky-bg)]/80', dot: 'bg-[var(--status-sky-dot)]', fallback: 'bg-[var(--status-sky-bg)]/20 text-[var(--status-sky-text)]' },
+  off: { bg: 'bg-[var(--status-zinc-bg)]/20', text: 'text-[var(--status-zinc-text)]', border: 'border-[var(--status-zinc-border)]/50', ring: 'ring-[var(--status-zinc-bg)]/80', dot: 'bg-[var(--status-zinc-dot)]', fallback: 'bg-muted text-muted-foreground' },
+  unknown: { bg: 'bg-[var(--status-rose-bg)]/20', text: 'text-[var(--status-rose-text)]', border: 'border-[var(--status-rose-border)]/50', ring: 'ring-[var(--status-rose-bg)]/80', dot: 'bg-[var(--status-rose-dot)]', fallback: 'bg-[var(--status-rose-bg)]/20 text-[var(--status-rose-text)]' },
 }
 
 const STATUS_LABELS: Record<ExtendedStatus, string> = {
@@ -32,9 +33,9 @@ const STATUS_LABELS: Record<ExtendedStatus, string> = {
 }
 
 const STATUS_DOT_COLORS: Record<string, string> = {
-  in_office: 'bg-emerald-400',
-  wfh: 'bg-sky-400',
-  off: 'bg-zinc-400',
+  in_office: 'bg-[var(--status-emerald-dot)]',
+  wfh: 'bg-[var(--status-sky-dot)]',
+  off: 'bg-[var(--status-zinc-dot)]',
   sick: 'bg-amber-400',
   vacation: 'bg-violet-400',
 }
@@ -143,8 +144,8 @@ export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert 
               <SelectTrigger className={cn(
                 "w-52 border shadow-sm focus:ring-primary/20 transition-all rounded-full font-medium",
                 userLog?.status
-                  ? "bg-zinc-800 border-zinc-600 text-foreground"
-                  : "bg-zinc-900 border-dashed border-zinc-600 text-muted-foreground"
+                  ? "bg-card border-border text-foreground"
+                  : "bg-muted border-dashed border-border text-muted-foreground"
               )}>
                 <div className="flex items-center gap-2">
                   {userLog?.status && (
@@ -155,9 +156,9 @@ export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert 
                   </span>
                 </div>
               </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false} sideOffset={6} className="bg-zinc-800 border-zinc-600 rounded-xl p-1">
+              <SelectContent alignItemWithTrigger={false} sideOffset={6} className="bg-card border-border rounded-xl p-1">
                 {(['in_office', 'wfh', 'off', 'sick', 'vacation'] as WorkStatus[]).map((status) => (
-                  <SelectItem key={status} value={status} className="rounded-lg focus:bg-zinc-700 cursor-pointer">
+                  <SelectItem key={status} value={status} className="rounded-lg focus:bg-muted cursor-pointer">
                     <div className="flex items-center gap-2.5">
                       <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", STATUS_DOT_COLORS[status])} />
                       <span className="font-medium">{STATUS_LABELS[status]}</span>
@@ -178,7 +179,7 @@ export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert 
                     if (e.key === 'Escape') setEditingName(false)
                   }}
                   placeholder="Display name"
-                  className="w-36 rounded-full border border-border/30 bg-zinc-900 px-3 py-2 text-sm outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
+                  className="w-36 rounded-full border border-border/30 bg-muted px-3 py-2 text-sm outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
                 />
                 <button
                   onClick={handleSaveName}
@@ -189,7 +190,7 @@ export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert 
                 </button>
                 <button
                   onClick={() => setEditingName(false)}
-                  className="rounded-full border border-border/20 bg-zinc-900 px-3 py-2 text-sm font-medium text-muted-foreground transition-all hover:border-border/50 hover:text-foreground"
+                  className="rounded-full border border-border/20 bg-muted px-3 py-2 text-sm font-medium text-muted-foreground transition-all hover:border-border/50 hover:text-foreground"
                 >
                   Cancel
                 </button>
@@ -197,7 +198,7 @@ export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert 
             ) : (
               <button
                 onClick={() => { setNameValue(currentProfile?.name ?? ''); setEditingName(true) }}
-                className="rounded-full border border-border/20 bg-zinc-900 px-4 py-2 text-sm font-medium text-muted-foreground transition-all hover:border-border/50 hover:text-foreground"
+                className="rounded-full border border-border/20 bg-muted px-4 py-2 text-sm font-medium text-muted-foreground transition-all hover:border-border/50 hover:text-foreground"
                 title="Edit display name"
               >
                 {currentProfile?.name || currentProfile?.email || 'Set name'}
@@ -205,10 +206,11 @@ export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert 
             )}
             <button
               onClick={handleSignOut}
-              className="rounded-full border border-border/20 bg-zinc-900 px-4 py-2 text-sm font-medium text-muted-foreground transition-all hover:border-border/50 hover:text-foreground"
+              className="rounded-full border border-border/20 bg-muted px-4 py-2 text-sm font-medium text-muted-foreground transition-all hover:border-border/50 hover:text-foreground"
             >
               Sign out
             </button>
+            <ThemeToggle />
           </div>
         )}
       </div>
@@ -219,11 +221,11 @@ export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert 
             whileHover={{ y: -2, scale: 1.02 }}
             transition={{ type: 'spring', stiffness: 300, damping: 20 }}
             key={status}
-            className={`rounded-2xl bg-zinc-900/90 border border-white/10 shadow-sm transition-colors hover:border-white/20`}
+            className={`rounded-2xl bg-card border border-border shadow-sm transition-colors hover:border-primary/20`}
           >
             <div className={`px-3 py-2 flex items-center justify-between`}>
-              <span className="text-xs font-semibold text-zinc-400">{STATUS_LABELS[status]}</span>
-              <Badge className={`bg-black/20 ${STATUS_COLORS[getStatusTone(status)].text} text-xs border-0 px-2 py-0 shadow-none font-bold rounded-full`}>
+              <span className="text-xs font-semibold text-muted-foreground">{STATUS_LABELS[status]}</span>
+              <Badge className={`bg-foreground/5 ${STATUS_COLORS[getStatusTone(status)].text} text-xs border-0 px-2 py-0 shadow-none font-bold rounded-full`}>
                 {grouped[status].length}
               </Badge>
             </div>
@@ -242,8 +244,8 @@ export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert 
                       className={cn(
                         'truncate text-xs py-0.5 font-medium',
                         tone.text,
-                        hasNoTasks && 'text-amber-300',
-                        status === 'unknown' && 'text-rose-300 animate-pulse'
+                        hasNoTasks && 'text-[var(--status-amber-text)]',
+                        status === 'unknown' && 'text-[var(--status-rose-text)] animate-pulse'
                       )}
                     >
                       {displayName}
@@ -252,7 +254,7 @@ export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert 
                 })}
               </div>
               {status === 'unknown' && grouped[status].length > 0 && (
-                <div className="mt-3 text-[10px] text-rose-300 font-medium uppercase tracking-wider">
+                <div className="mt-3 text-[10px] text-[var(--status-rose-text)] font-medium uppercase tracking-wider">
                   Warning: {grouped[status].length} team member{grouped[status].length === 1 ? '' : 's'} not logged
                 </div>
               )}
@@ -260,7 +262,7 @@ export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert 
                 const userLog = logs.find((l) => l.user_id === p.id)
                 return !userLog?.activities?.trim()
               }) && (
-                <div className="mt-3 text-[10px] text-amber-300 font-medium uppercase tracking-wider">
+                <div className="mt-3 text-[10px] text-[var(--status-amber-text)] font-medium uppercase tracking-wider">
                   Warning: {grouped[status].filter(p => !logs.find((l) => l.user_id === p.id)?.activities?.trim()).length} without tasks
                 </div>
               )}
@@ -271,12 +273,12 @@ export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert 
       {(unknownCount > 0 || missingTasksCount > 0) && (
         <div className="mt-2 flex flex-wrap gap-2">
           {unknownCount > 0 && (
-            <div className="rounded-full border border-rose-500/50 bg-rose-500/20 px-3 py-1 text-xs font-semibold text-rose-200">
+            <div className="rounded-full border border-[var(--status-rose-border)]/50 bg-[var(--status-rose-bg)]/20 px-3 py-1 text-xs font-semibold text-[var(--status-rose-text)]">
               Warning: {unknownCount} team member{unknownCount === 1 ? '' : 's'} not logged
             </div>
           )}
           {missingTasksCount > 0 && (
-            <div className="rounded-full border border-amber-500/50 bg-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-200">
+            <div className="rounded-full border border-[var(--status-amber-border)]/50 bg-[var(--status-amber-bg)]/20 px-3 py-1 text-xs font-semibold text-[var(--status-amber-text)]">
               Warning: {missingTasksCount} team member{missingTasksCount === 1 ? '' : 's'} without tasks
             </div>
           )}
