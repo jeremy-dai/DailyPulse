@@ -211,15 +211,18 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
     }
   }
 
+  const getActivityTime = (userId: string) => {
+    const log = logs.find((l) => l.user_id === userId && l.activities)
+    if (!log) return null
+    return log.activities_at ?? log.created_at
+  }
+
   const sortedOtherProfiles = initialProfiles
-    .filter((p) => p.id !== currentUserId && logs.some((l) => l.user_id === p.id && l.activities_at))
+    .filter((p) => p.id !== currentUserId && !!getActivityTime(p.id))
     .sort((a, b) => {
-      const logA = logs.find((l) => l.user_id === a.id && l.activities_at)
-      const logB = logs.find((l) => l.user_id === b.id && l.activities_at)
-      if (logA && logB) return new Date(logA.activities_at!).getTime() - new Date(logB.activities_at!).getTime()
-      if (logA) return -1
-      if (logB) return 1
-      return 0
+      const tA = getActivityTime(a.id)!
+      const tB = getActivityTime(b.id)!
+      return new Date(tA).getTime() - new Date(tB).getTime()
     })
 
   const orderedProfiles = currentUserId
