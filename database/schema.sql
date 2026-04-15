@@ -16,6 +16,7 @@ create table daily_logs (
   date date not null,
   status work_status not null default 'in_office',
   activities text,
+  activities_at timestamp with time zone,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
   unique(user_id, date) -- Prevent duplicate logs for the same user on the same day

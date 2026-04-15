@@ -115,9 +115,14 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
 
     try {
       if (log) {
+        const now = new Date().toISOString()
         const { data } = await supabase
           .from('daily_logs')
-          .update({ activities, updated_at: new Date().toISOString() })
+          .update({
+            activities,
+            updated_at: now,
+            ...(activities && !log.activities_at ? { activities_at: now } : {}),
+          })
           .eq('id', log.id)
           .select()
           .single()
@@ -127,9 +132,13 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
           setLastSaved(new Date())
         }
       } else {
+        const now = new Date().toISOString()
         const { data } = await supabase
           .from('daily_logs')
-          .upsert({ user_id: currentUserId, date, activities }, { onConflict: 'user_id,date' })
+          .upsert(
+            { user_id: currentUserId, date, activities, ...(activities ? { activities_at: now } : {}) },
+            { onConflict: 'user_id,date' }
+          )
           .select()
           .single()
         if (data) {
@@ -202,12 +211,23 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
     }
   }
 
+  const sortedOtherProfiles = initialProfiles
+    .filter((p) => p.id !== currentUserId && logs.some((l) => l.user_id === p.id && l.activities_at))
+    .sort((a, b) => {
+      const logA = logs.find((l) => l.user_id === a.id && l.activities_at)
+      const logB = logs.find((l) => l.user_id === b.id && l.activities_at)
+      if (logA && logB) return new Date(logA.activities_at!).getTime() - new Date(logB.activities_at!).getTime()
+      if (logA) return -1
+      if (logB) return 1
+      return 0
+    })
+
   const orderedProfiles = currentUserId
     ? [
         ...initialProfiles.filter((p) => p.id === currentUserId),
-        ...initialProfiles.filter((p) => p.id !== currentUserId),
+        ...sortedOtherProfiles,
       ]
-    : initialProfiles
+    : sortedOtherProfiles
 
   return (
     <div className="p-3 md:p-4 w-full max-w-[1800px] mx-auto">

@@ -13,6 +13,7 @@ export interface DailyLog {
   date: string
   status: WorkStatus
   activities: string | null
+  activities_at: string | null
   created_at: string
   updated_at: string
 }
