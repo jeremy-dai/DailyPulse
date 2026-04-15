@@ -17,6 +17,15 @@ const upsertLog = (logs: DailyLog[], nextLog: DailyLog) => {
   return [...filtered, nextLog]
 }
 
+// Payload shape emitted by realtime.broadcast_changes()
+interface BroadcastPayload {
+  record: DailyLog | null
+  old_record: DailyLog | null
+  operation: string
+  schema: string
+  table: string
+}
+
 export default function DayClient({ date, initialProfiles, initialLogs }: Props) {
   const [supabase] = useState(() => createClient())
   const [logs, setLogs] = useState<DailyLog[]>(initialLogs)
@@ -26,22 +35,23 @@ export default function DayClient({ date, initialProfiles, initialLogs }: Props)
   }, [initialLogs])
 
   useEffect(() => {
-    const channel = supabase
-      .channel(`day-client-${date}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'daily_logs', filter: `date=eq.${date}` },
-        (payload) => {
-          if (payload.eventType === 'DELETE') {
-            const deleted = payload.old as DailyLog
-            setLogs((prev) => prev.filter((log) => log.id !== deleted.id))
-            return
-          }
+    supabase.realtime.setAuth()
 
-          const updated = payload.new as DailyLog
-          setLogs((prev) => upsertLog(prev, updated))
-        }
-      )
+    const channel = supabase
+      .channel('company:daily_logs', { config: { private: true } })
+      .on('broadcast', { event: 'INSERT' }, (msg) => {
+        const { record } = msg.payload as BroadcastPayload
+        if (record && record.date === date) setLogs((prev) => upsertLog(prev, record))
+      })
+      .on('broadcast', { event: 'UPDATE' }, (msg) => {
+        const { record } = msg.payload as BroadcastPayload
+        if (record && record.date === date) setLogs((prev) => upsertLog(prev, record))
+      })
+      .on('broadcast', { event: 'DELETE' }, (msg) => {
+        const { old_record } = msg.payload as BroadcastPayload
+        if (old_record && old_record.date === date)
+          setLogs((prev) => prev.filter((l) => l.id !== old_record.id))
+      })
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
