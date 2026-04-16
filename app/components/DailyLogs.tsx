@@ -179,7 +179,10 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
     inputValueRef.current = value
     const log = logs.find((l) => l.user_id === currentUserId)
     const persisted = log?.activities ?? ''
-    if (value === persisted) return
+    if (value === persisted) {
+      shouldUpdateInputRef.current = true
+      return
+    }
     void save(value)
   }
 
@@ -310,6 +313,7 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
                           const v = e.target.value
                           inputValueRef.current = v
                           setInputValue(v)
+                          shouldUpdateInputRef.current = false
                         }}
                         onKeyDown={handleKeyDown}
                         onBlur={handleBlur}
