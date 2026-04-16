@@ -274,7 +274,7 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
                     <div className="flex items-center gap-1.5 min-w-0">
                       <CardTitle className="truncate text-xs font-semibold text-foreground leading-tight">{profile.email}</CardTitle>
                       {isOwn && (
-                        <Badge className="border-0 bg-primary text-black shadow-none font-bold uppercase tracking-wider text-[9px] px-1.5 py-0 whitespace-nowrap rounded-full shrink-0">
+                        <Badge className="border-0 bg-primary text-primary-foreground shadow-none font-bold uppercase tracking-wider text-[9px] px-1.5 py-0 whitespace-nowrap rounded-full shrink-0">
                           You
                         </Badge>
                       )}

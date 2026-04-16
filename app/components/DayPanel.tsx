@@ -119,7 +119,7 @@ export default function DayPanel() {
     <div className="w-64 bg-background border-r border-border/10 h-screen sticky top-0 flex flex-col shrink-0 z-20">
       <div className="p-6">
         <h1 className="text-xl font-bold flex items-center gap-2 text-primary">
-          <div className="w-6 h-6 rounded-md bg-primary text-black flex items-center justify-center">
+          <div className="w-6 h-6 rounded-md bg-primary text-primary-foreground flex items-center justify-center">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
           </div>
           DailyPulse
