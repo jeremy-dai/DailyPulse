@@ -67,7 +67,6 @@ export default function DayClient({ date, initialProfiles, initialLogs }: Props)
         date={date}
         initialProfiles={initialProfiles}
         logs={logs}
-        onLogUpsert={handleLogUpsert}
       />
       <DailyLogs
         date={date}

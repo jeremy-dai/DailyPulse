@@ -3,15 +3,11 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/app/utils/supabase/client'
 import { Badge } from '@/components/ui/badge'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import type { Profile, DailyLog, WorkStatus } from '@/types/supabase'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { useLocale } from '@/app/components/locale-provider'
+import type { TranslationKey } from '@/app/components/locale-provider'
 
 type ExtendedStatus = WorkStatus | 'unknown'
 type StatusTone = 'in_office' | 'wfh' | 'off' | 'unknown'
@@ -23,23 +19,6 @@ const STATUS_COLORS: Record<StatusTone, { bg: string, text: string, border: stri
   unknown: { bg: 'bg-[var(--status-rose-bg)]/20', text: 'text-[var(--status-rose-text)]', border: 'border-[var(--status-rose-border)]/50', ring: 'ring-[var(--status-rose-bg)]/80', dot: 'bg-[var(--status-rose-dot)]', fallback: 'bg-[var(--status-rose-bg)]/20 text-[var(--status-rose-text)]' },
 }
 
-const STATUS_LABELS: Record<ExtendedStatus, string> = {
-  in_office: 'In Office',
-  wfh: 'Work From Home',
-  off: 'Off',
-  sick: 'Sick',
-  vacation: 'Vacation',
-  unknown: 'Not Logged',
-}
-
-const STATUS_DOT_COLORS: Record<string, string> = {
-  in_office: 'bg-[var(--status-emerald-dot)]',
-  wfh: 'bg-[var(--status-sky-dot)]',
-  off: 'bg-[var(--status-zinc-dot)]',
-  sick: 'bg-amber-400',
-  vacation: 'bg-violet-400',
-}
-
 const STATUS_ORDER: ExtendedStatus[] = ['in_office', 'wfh', 'off', 'sick', 'vacation', 'unknown']
 
 const getStatusTone = (status: ExtendedStatus): StatusTone => {
@@ -47,16 +26,33 @@ const getStatusTone = (status: ExtendedStatus): StatusTone => {
   return 'off'
 }
 
+const getStatusLabel = (status: ExtendedStatus, t: (key: TranslationKey) => string) => {
+  switch (status) {
+    case 'in_office':
+      return t('statusInOffice')
+    case 'wfh':
+      return t('statusWfh')
+    case 'off':
+      return t('statusOff')
+    case 'sick':
+      return t('statusSick')
+    case 'vacation':
+      return t('statusVacation')
+    default:
+      return t('notLogged')
+  }
+}
+
 interface Props {
   date: string
   initialProfiles: Profile[]
   logs: DailyLog[]
-  onLogUpsert: (log: DailyLog) => void
 }
 
 import { motion } from 'framer-motion'
 
-export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert }: Props) {
+export default function TopDashboard({ date, initialProfiles, logs }: Props) {
+  const { locale, localeTag, toggleLocale, t } = useLocale()
   const supabase = createClient()
   const router = useRouter()
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -85,28 +81,6 @@ export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert 
   }, [supabase])
 
   const currentProfile = currentUserId ? initialProfiles.find((p) => p.id === currentUserId) : null
-  const userLog = currentUserId ? logs.find((l) => l.user_id === currentUserId) : null
-
-  const handleStatusChange = async (newStatus: WorkStatus | null) => {
-    if (!currentUserId || !newStatus) return
-
-    if (userLog) {
-      const { data } = await supabase
-        .from('daily_logs')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
-        .eq('id', userLog.id)
-        .select()
-        .single()
-      if (data) onLogUpsert(data)
-    } else {
-      const { data } = await supabase
-        .from('daily_logs')
-        .upsert({ user_id: currentUserId, date, status: newStatus }, { onConflict: 'user_id,date' })
-        .select()
-        .single()
-      if (data) onLogUpsert(data)
-    }
-  }
 
   const grouped = STATUS_ORDER.reduce<Record<ExtendedStatus, Profile[]>>(
     (acc, status) => ({ ...acc, [status]: [] }),
@@ -118,7 +92,7 @@ export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert 
     grouped[status].push(profile)
   }
 
-  const displayDate = new Date(`${date}T12:00:00`).toLocaleDateString('en-US', {
+  const displayDate = new Date(`${date}T12:00:00`).toLocaleDateString(localeTag, {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -137,36 +111,6 @@ export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert 
         <h1 className="text-lg font-bold tracking-tight text-foreground">{displayDate}</h1>
         {currentUserId && (
           <div className="flex items-center gap-3">
-            <Select
-              value={userLog?.status ?? null}
-              onValueChange={(v) => handleStatusChange(v as WorkStatus)}
-            >
-              <SelectTrigger className={cn(
-                "w-52 border shadow-sm focus:ring-primary/20 transition-all rounded-full font-medium",
-                userLog?.status
-                  ? "bg-card border-border text-foreground"
-                  : "bg-muted border-dashed border-border text-muted-foreground"
-              )}>
-                <div className="flex items-center gap-2">
-                  {userLog?.status && (
-                    <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", STATUS_DOT_COLORS[userLog.status])} />
-                  )}
-                  <span className={userLog?.status ? undefined : "text-muted-foreground"}>
-                    {userLog?.status ? STATUS_LABELS[userLog.status] : "Set your status…"}
-                  </span>
-                </div>
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false} sideOffset={6} className="bg-card border-border rounded-xl p-1">
-                {(['in_office', 'wfh', 'off', 'sick', 'vacation'] as WorkStatus[]).map((status) => (
-                  <SelectItem key={status} value={status} className="rounded-lg focus:bg-muted cursor-pointer">
-                    <div className="flex items-center gap-2.5">
-                      <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", STATUS_DOT_COLORS[status])} />
-                      <span className="font-medium">{STATUS_LABELS[status]}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
             {editingName ? (
               <div className="flex items-center gap-2">
                 <input
@@ -178,7 +122,7 @@ export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert 
                     if (e.key === 'Enter') handleSaveName()
                     if (e.key === 'Escape') setEditingName(false)
                   }}
-                  placeholder="Display name"
+                  placeholder={t('displayName')}
                   className="w-36 rounded-full border border-border/30 bg-muted px-3 py-2 text-sm outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
                 />
                 <button
@@ -186,29 +130,37 @@ export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert 
                   disabled={nameSaving}
                   className="rounded-full bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-all hover:bg-primary/90 disabled:opacity-50"
                 >
-                  {nameSaving ? '…' : 'Save'}
+                  {nameSaving ? '…' : t('save')}
                 </button>
                 <button
                   onClick={() => setEditingName(false)}
                   className="rounded-full border border-border/20 bg-muted px-3 py-2 text-sm font-medium text-muted-foreground transition-all hover:border-border/50 hover:text-foreground"
                 >
-                  Cancel
+                  {t('cancel')}
                 </button>
               </div>
             ) : (
               <button
                 onClick={() => { setNameValue(currentProfile?.name ?? ''); setEditingName(true) }}
                 className="rounded-full border border-border/20 bg-muted px-4 py-2 text-sm font-medium text-muted-foreground transition-all hover:border-border/50 hover:text-foreground"
-                title="Edit display name"
+                title={t('editDisplayName')}
               >
-                {currentProfile?.name || currentProfile?.email || 'Set name'}
+                {currentProfile?.name || currentProfile?.email || t('setName')}
               </button>
             )}
             <button
               onClick={handleSignOut}
               className="rounded-full border border-border/20 bg-muted px-4 py-2 text-sm font-medium text-muted-foreground transition-all hover:border-border/50 hover:text-foreground"
             >
-              Sign out
+              {t('signOut')}
+            </button>
+            <button
+              onClick={toggleLocale}
+              className="rounded-full border border-border/20 bg-muted px-3 py-2 text-xs font-semibold tracking-wide text-muted-foreground transition-all hover:border-border/50 hover:text-foreground"
+              aria-label={locale === 'en' ? 'Switch to Chinese' : '切换到英文'}
+              title={locale === 'en' ? 'Switch to Chinese' : '切换到英文'}
+            >
+              {locale === 'en' ? '中文' : 'English'}
             </button>
             <ThemeToggle />
           </div>
@@ -224,7 +176,7 @@ export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert 
             className={`rounded-2xl bg-card border border-border shadow-sm transition-colors hover:border-primary/20`}
           >
             <div className={`px-3 py-2 flex items-center justify-between`}>
-              <span className="text-xs font-semibold text-muted-foreground">{STATUS_LABELS[status]}</span>
+              <span className="text-xs font-semibold text-muted-foreground">{getStatusLabel(status, t)}</span>
               <Badge className={`bg-foreground/5 ${STATUS_COLORS[getStatusTone(status)].text} text-xs border-0 px-2 py-0 shadow-none font-bold rounded-full`}>
                 {grouped[status].length}
               </Badge>
@@ -255,7 +207,9 @@ export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert 
               </div>
               {status === 'unknown' && grouped[status].length > 0 && (
                 <div className="mt-3 text-[10px] text-[var(--status-rose-text)] font-medium uppercase tracking-wider">
-                  Warning: {grouped[status].length} team member{grouped[status].length === 1 ? '' : 's'} not logged
+                  {locale === 'zh'
+                    ? `${t('warning')}：${grouped[status].length}${t('teamMembers')}${t('notLogged')}`
+                    : `${t('warning')}: ${grouped[status].length} ${grouped[status].length === 1 ? t('teamMember') : t('teamMembers')} ${t('notLogged').toLowerCase()}`}
                 </div>
               )}
               {(status === 'in_office' || status === 'wfh') && grouped[status].some(p => {
@@ -263,7 +217,9 @@ export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert 
                 return !userLog?.activities?.trim()
               }) && (
                 <div className="mt-3 text-[10px] text-[var(--status-amber-text)] font-medium uppercase tracking-wider">
-                  Warning: {grouped[status].filter(p => !logs.find((l) => l.user_id === p.id)?.activities?.trim()).length} without tasks
+                  {locale === 'zh'
+                    ? `${t('warning')}：${grouped[status].filter(p => !logs.find((l) => l.user_id === p.id)?.activities?.trim()).length}${t('teamMembers')}${t('withoutTasks')}`
+                    : `${t('warning')}: ${grouped[status].filter(p => !logs.find((l) => l.user_id === p.id)?.activities?.trim()).length} ${t('withoutTasks')}`}
                 </div>
               )}
             </div>
@@ -274,12 +230,16 @@ export default function TopDashboard({ date, initialProfiles, logs, onLogUpsert 
         <div className="mt-2 flex flex-wrap gap-2">
           {unknownCount > 0 && (
             <div className="rounded-full border border-[var(--status-rose-border)]/50 bg-[var(--status-rose-bg)]/20 px-3 py-1 text-xs font-semibold text-[var(--status-rose-text)]">
-              Warning: {unknownCount} team member{unknownCount === 1 ? '' : 's'} not logged
+              {locale === 'zh'
+                ? `${t('warning')}：${unknownCount}${t('teamMembers')}${t('notLogged')}`
+                : `${t('warning')}: ${unknownCount} ${unknownCount === 1 ? t('teamMember') : t('teamMembers')} ${t('notLogged').toLowerCase()}`}
             </div>
           )}
           {missingTasksCount > 0 && (
             <div className="rounded-full border border-[var(--status-amber-border)]/50 bg-[var(--status-amber-bg)]/20 px-3 py-1 text-xs font-semibold text-[var(--status-amber-text)]">
-              Warning: {missingTasksCount} team member{missingTasksCount === 1 ? '' : 's'} without tasks
+              {locale === 'zh'
+                ? `${t('warning')}：${missingTasksCount}${t('teamMembers')}${t('withoutTasks')}`
+                : `${t('warning')}: ${missingTasksCount} ${missingTasksCount === 1 ? t('teamMember') : t('teamMembers')} ${t('withoutTasks')}`}
             </div>
           )}
         </div>
