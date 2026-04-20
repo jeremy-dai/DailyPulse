@@ -41,8 +41,15 @@ export type TranslationKey =
   | 'statusSick'
   | 'statusVacation'
 
+  | 'quickFill'
+  | 'quickFillTitle'
+  | 'quickFillDesc'
+
 const messages: Record<AppLocale, Record<TranslationKey, string>> = {
   en: {
+    quickFill: 'Quick Fill',
+    quickFillTitle: 'Quick Status Fill',
+    quickFillDesc: 'Quickly set your status for the whole month',
     overview: 'Overview',
     unknown: 'Unknown',
     monthlyOverview: 'Monthly Overview',
@@ -80,6 +87,9 @@ const messages: Record<AppLocale, Record<TranslationKey, string>> = {
     statusVacation: 'Vacation',
   },
   zh: {
+    quickFill: '快速填报',
+    quickFillTitle: '快速状态填报',
+    quickFillDesc: '快速设置您整月的状态',
     overview: '总览',
     unknown: '未知',
     monthlyOverview: '月度总览',

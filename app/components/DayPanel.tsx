@@ -5,7 +5,22 @@ import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/app/utils/supabase/client'
 import { useLocale } from '@/app/components/locale-provider'
-import type { DailyLog, Profile } from '@/types/supabase'
+import type { DailyLog, Profile, WorkStatus } from '@/types/supabase'
+
+type StatusTone = 'in_office' | 'wfh' | 'off' | 'unknown'
+
+const STATUS_COLORS: Record<StatusTone, { bg: string, text: string, border: string, ring: string, dot: string, inputOutline: string }> = {
+  in_office: { bg: 'bg-[var(--status-emerald-bg)]/20', text: 'text-[var(--status-emerald-text)]', border: 'border-[var(--status-emerald-border)]/50', ring: 'ring-[var(--status-emerald-bg)]/80', dot: 'bg-[var(--status-emerald-dot)]', inputOutline: 'border-[var(--status-emerald-border)]/50 focus:border-[var(--status-emerald-border)]/80 focus:ring-[var(--status-emerald-bg)]/20' },
+  wfh: { bg: 'bg-[var(--status-sky-bg)]/20', text: 'text-[var(--status-sky-text)]', border: 'border-[var(--status-sky-border)]/50', ring: 'ring-[var(--status-sky-bg)]/80', dot: 'bg-[var(--status-sky-dot)]', inputOutline: 'border-[var(--status-sky-border)]/50 focus:border-[var(--status-sky-border)]/80 focus:ring-[var(--status-sky-bg)]/20' },
+  off: { bg: 'bg-[var(--status-zinc-bg)]/20', text: 'text-[var(--status-zinc-text)]', border: 'border-[var(--status-zinc-border)]/50', ring: 'ring-[var(--status-zinc-bg)]/80', dot: 'bg-[var(--status-zinc-dot)]', inputOutline: 'border-[var(--status-zinc-border)]/50 focus:border-[var(--status-zinc-border)]/80 focus:ring-[var(--status-zinc-bg)]/20' },
+  unknown: { bg: 'bg-[var(--status-rose-bg)]/20', text: 'text-[var(--status-rose-text)]', border: 'border-[var(--status-rose-border)]/50', ring: 'ring-[var(--status-rose-bg)]/80', dot: 'bg-[var(--status-rose-dot)]', inputOutline: 'border-[var(--status-rose-border)]/50 focus:border-[var(--status-rose-border)]/80 focus:ring-[var(--status-rose-bg)]/20' },
+}
+
+const getStatusTone = (status: WorkStatus | null | undefined): StatusTone => {
+  if (!status) return 'unknown'
+  if (status === 'in_office' || status === 'wfh') return status
+  return 'off'
+}
 
 const getDaysInMonth = (year: number, month: number): Date[] => {
   const days: Date[] = []
@@ -35,6 +50,84 @@ export default function DayPanel() {
   const [overviewLogs, setOverviewLogs] = useState<(DailyLog & { profile?: Profile })[]>([])
   const [overviewLoading, setOverviewLoading] = useState(false)
   const [overviewUserId, setOverviewUserId] = useState<string | null>(null)
+
+  const [quickFillOpen, setQuickFillOpen] = useState(false)
+  const [quickFillLogs, setQuickFillLogs] = useState<DailyLog[]>([])
+  const [quickFillLoading, setQuickFillLoading] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setCurrentUserId(user.id)
+    })
+  }, [])
+
+  const openQuickFill = async () => {
+    if (!currentUserId) return
+    setQuickFillOpen(true)
+    setQuickFillLoading(true)
+    const supabase = createClient()
+    const startDate = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-01`
+    const endDate = new Date(viewYear, viewMonth + 1, 0).toLocaleDateString('en-CA')
+    const { data: logs } = await supabase
+      .from('daily_logs')
+      .select('*')
+      .eq('user_id', currentUserId)
+      .gte('date', startDate)
+      .lte('date', endDate)
+    setQuickFillLogs(logs ?? [])
+    setQuickFillLoading(false)
+  }
+
+  const handleQuickStatusChange = async (dateStr: string, newStatus: WorkStatus) => {
+    if (!currentUserId) return
+    const log = quickFillLogs.find(l => l.date === dateStr)
+    const supabase = createClient()
+    
+    // Optimistic update
+    const newLogs = [...quickFillLogs]
+    if (log) {
+      const idx = newLogs.findIndex(l => l.id === log.id)
+      newLogs[idx] = { ...log, status: newStatus }
+    } else {
+      newLogs.push({
+        id: -1, // temporary
+        user_id: currentUserId,
+        date: dateStr,
+        status: newStatus,
+        activities: null,
+        activities_at: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+    }
+    setQuickFillLogs(newLogs)
+
+    if (log) {
+      const { data } = await supabase
+        .from('daily_logs')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', log.id)
+        .select()
+        .single()
+      if (data) {
+        setQuickFillLogs(prev => prev.map(l => l.id === data.id ? data : l))
+      }
+    } else {
+      const { data } = await supabase
+        .from('daily_logs')
+        .upsert({ user_id: currentUserId, date: dateStr, status: newStatus }, { onConflict: 'user_id,date' })
+        .select()
+        .single()
+      if (data) {
+        setQuickFillLogs(prev => {
+          const filtered = prev.filter(l => l.id !== -1)
+          return [...filtered, data]
+        })
+      }
+    }
+  }
 
   const openOverview = async () => {
     setOverviewOpen(true)
@@ -144,13 +237,25 @@ export default function DayPanel() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
           </button>
         </div>
-        <button
-          onClick={openOverview}
-          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-muted hover:bg-background text-muted-foreground hover:text-foreground text-xs font-medium transition-colors border border-border hover:border-foreground/10"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
-          {t('overview')}
-        </button>
+        <div className="flex gap-2 w-full">
+          <button
+            onClick={openOverview}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-muted hover:bg-background text-muted-foreground hover:text-foreground text-xs font-medium transition-colors border border-border hover:border-foreground/10"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>
+            {t('overview')}
+          </button>
+          {currentUserId && (
+            <button
+              onClick={openQuickFill}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-muted hover:bg-background text-muted-foreground hover:text-foreground text-xs font-medium transition-colors border border-border hover:border-foreground/10"
+              title={t('quickFillTitle')}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+              {t('quickFill')}
+            </button>
+          )}
+        </div>
       </div>
       <div className="overflow-y-auto flex-1 px-4 space-y-1 scrollbar-hide pb-6">
         {dates.map((date) => {
@@ -343,6 +448,122 @@ export default function DayPanel() {
                   </button>
                 </div>
               )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {quickFillOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/70 backdrop-blur-sm"
+            onClick={() => setQuickFillOpen(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 8 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+              className="bg-card border border-border rounded-xl w-full max-w-5xl h-[min(92vh,900px)] max-h-[92vh] flex flex-col shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-md bg-primary/10 border border-primary/30 flex items-center justify-center shrink-0 text-primary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                  </div>
+                  <div>
+                    <h2 className="text-base font-semibold text-foreground leading-tight">{t('quickFillTitle')}</h2>
+                    <p className="text-xs text-muted-foreground leading-tight">{monthLabel}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setQuickFillOpen(false)}
+                  className="w-8 h-8 rounded-md hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="overflow-y-auto flex-1 min-h-0 px-4 py-4 space-y-4">
+                {quickFillLoading ? (
+                  <div className="grid grid-cols-7 gap-3">
+                    {[...Array(35)].map((_, i) => (
+                      <div key={i} className="h-24 bg-muted rounded-xl animate-pulse" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="w-full">
+                    {/* Weekday Headers */}
+                    <div className="grid grid-cols-7 gap-3 mb-3">
+                      {Array.from({ length: 7 }).map((_, i) => {
+                        const d = new Date(2023, 0, 1 + i) // Jan 1 2023 was Sunday
+                        return (
+                          <div key={i} className="text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            {d.toLocaleDateString(localeTag, { weekday: 'short' })}
+                          </div>
+                        )
+                      })}
+                    </div>
+                    {/* Calendar Grid */}
+                    <div className="grid grid-cols-7 gap-3">
+                      {/* Empty cells for padding */}
+                      {Array.from({ length: dates[0].getDay() }).map((_, i) => (
+                        <div key={`empty-${i}`} className="min-h-[100px] rounded-xl border border-transparent bg-muted/10" />
+                      ))}
+                      {/* Days */}
+                      {dates.map((date) => {
+                        const dateStr = date.toLocaleDateString('en-CA')
+                        const log = quickFillLogs.find(l => l.date === dateStr)
+                        const isWeekend = date.getDay() === 0 || date.getDay() === 6
+                        const isToday = dateStr === todayStr
+                        const tone = getStatusTone(log?.status)
+                        const colors = STATUS_COLORS[tone]
+                        
+                        return (
+                          <div key={dateStr} className={cn(
+                            "flex flex-col min-h-[100px] p-3 rounded-xl border transition-colors",
+                            isWeekend && !log?.status ? "bg-muted/30 border-transparent" : "bg-card border-border",
+                            log?.status ? `${colors.bg} ${colors.border}` : "",
+                            isToday ? "ring-2 ring-primary/30" : ""
+                          )}>
+                            <div className="flex items-center justify-between mb-auto">
+                              <span className={cn(
+                                "text-sm font-semibold flex items-center justify-center w-7 h-7 rounded-full",
+                                isToday ? "bg-primary text-primary-foreground" : isWeekend && !log?.status ? "text-muted-foreground" : log?.status ? colors.text : "text-foreground"
+                              )}>
+                                {date.getDate()}
+                              </span>
+                            </div>
+                            <div className="mt-3">
+                              <select
+                                value={log?.status ?? ''}
+                                onChange={(e) => handleQuickStatusChange(dateStr, e.target.value as WorkStatus)}
+                                className={cn(
+                                  "w-full text-xs rounded-md border px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/50 cursor-pointer transition-colors",
+                                  log?.status ? `${colors.bg} ${colors.border} ${colors.text} font-medium` : "bg-background border-border text-muted-foreground"
+                                )}
+                              >
+                                <option value="" disabled hidden>{t('setStatus')}</option>
+                                <option value="in_office">{t('statusInOffice')}</option>
+                                <option value="wfh">{t('statusWfh')}</option>
+                                <option value="off">{t('statusOff')}</option>
+                                <option value="sick">{t('statusSick')}</option>
+                                <option value="vacation">{t('statusVacation')}</option>
+                              </select>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
             </motion.div>
           </motion.div>
         )}
