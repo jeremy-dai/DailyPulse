@@ -342,7 +342,7 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
                           onValueChange={(value) => handleStatusChange(value as WorkStatus)}
                         >
                           <SelectTrigger className={cn(
-                            `${STATUS_CHIP_BASE} !h-3.5 !min-h-0 w-fit max-w-[7.5rem] !rounded-full !py-0 !pr-1 !pl-1 !text-[7px] !leading-none focus:ring-0 [&_svg]:size-2.5 [&_svg]:text-current/70`,
+                            `${STATUS_CHIP_BASE} !h-3.5 !min-h-0 w-fit max-w-[7.5rem] !rounded-full !py-0 !pr-1 !pl-1 !text-[7px] !leading-none focus:ring-0 [&_svg]:size-2.5 [&_svg]:text-current/70 cursor-pointer`,
                             log
                               ? `${tone.bg} ${tone.text} border-0`
                               : 'border-0 bg-[var(--status-rose-bg)]/20 text-[var(--status-rose-text)] animate-pulse'
