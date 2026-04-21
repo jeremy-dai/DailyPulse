@@ -6,6 +6,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/app/utils/supabase/client'
 import { useLocale } from '@/app/components/locale-provider'
 import type { DailyLog, Profile, WorkStatus } from '@/types/supabase'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from '@/components/ui/select'
 
 type StatusTone = 'in_office' | 'wfh' | 'off' | 'unknown'
 
@@ -541,21 +547,37 @@ export default function DayPanel() {
                               </span>
                             </div>
                             <div className="mt-3">
-                              <select
+                              <Select
                                 value={log?.status ?? ''}
-                                onChange={(e) => handleQuickStatusChange(dateStr, e.target.value as WorkStatus)}
-                                className={cn(
-                                  "w-full text-xs rounded-md border px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/50 cursor-pointer transition-colors",
-                                  log?.status ? `${colors.bg} ${colors.border} ${colors.text} font-medium` : "bg-background border-border text-muted-foreground"
-                                )}
+                                onValueChange={(value) => handleQuickStatusChange(dateStr, value as WorkStatus)}
                               >
-                                <option value="" disabled hidden>{t('setStatus')}</option>
-                                <option value="in_office">{t('statusInOffice')}</option>
-                                <option value="wfh">{t('statusWfh')}</option>
-                                <option value="off">{t('statusOff')}</option>
-                                <option value="sick">{t('statusSick')}</option>
-                                <option value="vacation">{t('statusVacation')}</option>
-                              </select>
+                                <SelectTrigger className={cn(
+                                  "w-full text-xs rounded-md border px-2 py-1.5 h-auto cursor-pointer transition-colors",
+                                  log?.status ? `${colors.bg} ${colors.border} ${colors.text} font-medium` : "bg-background border-border text-muted-foreground"
+                                )}>
+                                  {log?.status ? (
+                                    (() => {
+                                      const labels: Record<WorkStatus, string> = {
+                                        in_office: t('statusInOffice'),
+                                        wfh: t('statusWfh'),
+                                        off: t('statusOff'),
+                                        sick: t('statusSick'),
+                                        vacation: t('statusVacation'),
+                                      }
+                                      return labels[log.status]
+                                    })()
+                                  ) : (
+                                    <span className="text-muted-foreground">{t('setStatus')}</span>
+                                  )}
+                                </SelectTrigger>
+                                <SelectContent className="bg-card border-border rounded-xl p-1">
+                                  <SelectItem value="in_office" className="rounded-lg focus:bg-muted cursor-pointer text-xs">{t('statusInOffice')}</SelectItem>
+                                  <SelectItem value="wfh" className="rounded-lg focus:bg-muted cursor-pointer text-xs">{t('statusWfh')}</SelectItem>
+                                  <SelectItem value="off" className="rounded-lg focus:bg-muted cursor-pointer text-xs">{t('statusOff')}</SelectItem>
+                                  <SelectItem value="sick" className="rounded-lg focus:bg-muted cursor-pointer text-xs">{t('statusSick')}</SelectItem>
+                                  <SelectItem value="vacation" className="rounded-lg focus:bg-muted cursor-pointer text-xs">{t('statusVacation')}</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
                           </div>
                         )
