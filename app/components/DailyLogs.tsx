@@ -431,9 +431,18 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
               <Card className={cn(
                 'group relative grid h-[210px] w-full grid-rows-[3rem_1fr] overflow-hidden border bg-card/85 py-0 shadow-sm transition-all duration-300 hover:shadow-lg gap-0',
                 tone.border,
-                isOwn && 'shadow-primary/10'
+                isOwn && 'shadow-primary/10',
+                rank === 1 && 'shadow-yellow-400/20 shadow-md',
+                rank === 2 && 'shadow-slate-400/20 shadow-md',
+                rank === 3 && 'shadow-amber-600/20 shadow-md'
               )} size="sm">
-                <CardHeader className="relative z-10 flex h-full flex-row items-center gap-1.5 bg-muted/15 pl-3.5 pr-2.5 py-1">
+                <CardHeader className={cn(
+                  "relative z-10 flex h-full flex-row items-center gap-1.5 pl-3.5 pr-2.5 py-1",
+                  rank === 1 ? "bg-gradient-to-r from-yellow-400/10 to-transparent" :
+                  rank === 2 ? "bg-gradient-to-r from-slate-400/10 to-transparent" :
+                  rank === 3 ? "bg-gradient-to-r from-amber-600/10 to-transparent" :
+                  "bg-muted/15"
+                )}>
                   <div className="relative shrink-0">
                     <div className={cn(
                       'flex h-7 w-7 shrink-0 items-center justify-center rounded-full ring-1.5 shadow-sm text-xs font-medium',
