@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/select'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { Trophy, Medal, X, Info } from 'lucide-react'
+import { Trophy, Medal, X, Info, ChevronDown } from 'lucide-react'
 import confetti from 'canvas-confetti'
 
 type StatusTone = 'in_office' | 'wfh' | 'off' | 'unknown'
@@ -36,7 +36,7 @@ const STATUS_DOT_COLORS: Record<WorkStatus, string> = {
 }
 
 const STATUS_CHIP_BASE =
-  'h-3.5 rounded-full border-0 px-1.25 py-0 text-[7px] font-semibold uppercase tracking-[0.08em] leading-none shadow-none whitespace-nowrap'
+  'inline-flex items-center justify-center rounded-full border-0 px-2.5 py-0 text-[9px] font-semibold leading-none shadow-none whitespace-nowrap'
 
 const getStatusTone = (status: WorkStatus | null): StatusTone => {
   if (!status) return 'unknown'
@@ -70,12 +70,15 @@ interface Props {
 
 function ScrollFade({ children }: { children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null)
-  const [fade, setFade] = useState(false)
+  const [hasOverflow, setHasOverflow] = useState(false)
+  const [showBottomCue, setShowBottomCue] = useState(false)
 
   const check = () => {
     const el = ref.current
     if (!el) return
-    setFade(el.scrollHeight > el.clientHeight + 2 && el.scrollTop + el.clientHeight < el.scrollHeight - 2)
+    const nextHasOverflow = el.scrollHeight > el.clientHeight + 2
+    setHasOverflow(nextHasOverflow)
+    setShowBottomCue(nextHasOverflow && el.scrollTop + el.clientHeight < el.scrollHeight - 2)
   }
 
   useEffect(() => {
@@ -92,11 +95,23 @@ function ScrollFade({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="relative flex-1 min-h-0">
-      <div ref={ref} className="h-full overflow-y-auto" onScroll={check}>
+      <div
+        ref={ref}
+        className="visible-scrollbar h-full overflow-y-scroll pr-2"
+        onScroll={check}
+      >
         {children}
       </div>
-      {fade && (
-        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-5 bg-gradient-to-t from-card to-transparent" />
+      {showBottomCue && (
+        <>
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-7 bg-gradient-to-t from-card via-card/85 to-transparent" />
+          <div className="pointer-events-none absolute bottom-1.5 right-3 flex h-5 items-center justify-center rounded-full bg-card/95 px-1.5 text-muted-foreground shadow-sm ring-1 ring-border/70">
+            <ChevronDown className="h-3.5 w-3.5 animate-bounce" />
+          </div>
+        </>
+      )}
+      {hasOverflow && !showBottomCue && (
+        <div className="pointer-events-none absolute inset-y-2 right-1 w-px rounded-full bg-border/70" />
       )}
     </div>
   )
@@ -429,15 +444,15 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
               transition={{ type: 'spring', stiffness: 300, damping: 24 }}
             >
               <Card className={cn(
-                'group relative grid h-[210px] w-full grid-rows-[3rem_1fr] overflow-hidden border bg-card/85 py-0 shadow-sm transition-all duration-300 hover:shadow-lg gap-0',
+                'group relative grid h-[210px] w-full grid-rows-[3.7rem_1fr] overflow-hidden border bg-card/85 py-0 shadow-sm transition-all duration-300 hover:shadow-lg gap-0',
                 tone.border,
                 isOwn && 'shadow-primary/10',
                 rank === 1 && 'shadow-yellow-400/20 shadow-md',
                 rank === 2 && 'shadow-slate-400/20 shadow-md',
                 rank === 3 && 'shadow-amber-600/20 shadow-md'
-              )} size="sm">
+                )} size="sm">
                 <CardHeader className={cn(
-                  "relative z-10 flex h-full flex-row items-center gap-1.5 pl-3.5 pr-2.5 py-1",
+                  "relative z-10 flex h-full flex-row items-center gap-2.5 px-3.5 py-2",
                   rank === 1 ? "bg-gradient-to-r from-yellow-400/10 to-transparent" :
                   rank === 2 ? "bg-gradient-to-r from-slate-400/10 to-transparent" :
                   rank === 3 ? "bg-gradient-to-r from-amber-600/10 to-transparent" :
@@ -445,7 +460,7 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
                 )}>
                   <div className="relative shrink-0">
                     <div className={cn(
-                      'flex h-7 w-7 shrink-0 items-center justify-center rounded-full ring-1.5 shadow-sm text-xs font-medium',
+                      'flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-full ring-1.5 shadow-sm text-xs font-medium',
                       rank === 1 ? 'bg-yellow-400/20 ring-yellow-400/80 text-yellow-600 dark:text-yellow-400' :
                       rank === 2 ? 'bg-slate-400/20 ring-slate-400/80 text-slate-600 dark:text-slate-300' :
                       rank === 3 ? 'bg-amber-600/20 ring-amber-600/80 text-amber-700 dark:text-amber-500' :
@@ -458,28 +473,28 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
                        rank || initials}
                     </div>
                     {!log && (
-                      <div className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-[var(--status-rose-dot)] animate-pulse ring-2 ring-card"></div>
+                      <div className="absolute right-0 top-0 h-2 w-2 rounded-full bg-[var(--status-rose-dot)] animate-pulse ring-2 ring-card" />
                     )}
                   </div>
-                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <div className="flex h-4 min-w-0 items-center gap-1">
-                      <CardTitle className="truncate text-[12px] font-medium leading-none text-foreground/95" title={profile.email}>
+                  <div className="flex min-w-0 flex-1 flex-col justify-center gap-1">
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <CardTitle className="truncate text-[12px] font-semibold leading-none tracking-tight text-foreground/95 sm:text-[13px]" title={profile.email}>
                         {displayName}
                       </CardTitle>
                       {isOwn && (
-                        <Badge className="h-3.5 border-0 bg-primary/90 px-1.25 py-0 text-[7px] font-semibold uppercase tracking-[0.08em] leading-none whitespace-nowrap rounded-full shrink-0 text-primary-foreground shadow-none">
+                        <Badge className="inline-flex h-5 shrink-0 items-center justify-center rounded-full border-0 bg-primary/90 px-2 py-0 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary-foreground shadow-none">
                           {t('you')}
                         </Badge>
                       )}
                     </div>
-                    <div className={cn('flex h-3.5 min-h-0 items-center gap-1', isOwn ? 'justify-between' : 'justify-start')}>
+                    <div className={cn('flex min-h-0 items-center gap-1.5', isOwn ? 'justify-between' : 'justify-start')}>
                       {isOwn ? (
                         <Select
                           value={log?.status ?? undefined}
                           onValueChange={(value) => handleStatusChange(value as WorkStatus)}
                         >
                           <SelectTrigger className={cn(
-                            `${STATUS_CHIP_BASE} !h-3.5 !min-h-0 w-fit max-w-[7.5rem] !rounded-full !py-0 !pr-1 !pl-1 !text-[7px] !leading-none focus:ring-0 [&_svg]:size-2.5 [&_svg]:text-current/70 cursor-pointer`,
+                            `${STATUS_CHIP_BASE} !h-5.5 !min-h-0 w-fit max-w-[8.5rem] !rounded-full !py-0 !pl-2 !pr-1.5 !text-[10px] !leading-none focus:ring-0 [&_svg]:size-3 [&_svg]:text-current/70 cursor-pointer`,
                             log
                               ? `${tone.bg} ${tone.text} border-0`
                               : 'border-0 bg-[var(--status-rose-bg)]/20 text-[var(--status-rose-text)] animate-pulse'
@@ -505,28 +520,30 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
                       ) : !log ? (
                         <Badge className={cn(
                           STATUS_CHIP_BASE,
-                          'bg-[var(--status-rose-bg)]/20 text-[var(--status-rose-text)] animate-pulse ring-1 ring-[var(--status-rose-border)]/30'
+                          'h-5.5 gap-1.5 bg-[var(--status-rose-bg)]/20 text-[var(--status-rose-text)] animate-pulse ring-1 ring-[var(--status-rose-border)]/30'
                         )}>
+                          <span className="h-2 w-2 rounded-full bg-[var(--status-rose-dot)]" />
                           {t('notLogged')}
                         </Badge>
                       ) : (
-                        <Badge className={cn(STATUS_CHIP_BASE, tone.bg, tone.text)}>
+                        <Badge className={cn(STATUS_CHIP_BASE, 'h-5.5 gap-1.5', tone.bg, tone.text)}>
+                          <span className={cn('h-2 w-2 rounded-full', STATUS_DOT_COLORS[log.status])} />
                           {getStatusLabel(log.status, t)}
                         </Badge>
                       )}
                       {isOwn && saveStatusText && (
-                        <span className={`ml-auto text-[8px] font-medium tabular-nums whitespace-nowrap ${getSaveStatusColor()}`}>
+                        <span className={`ml-auto text-[10px] font-medium tabular-nums whitespace-nowrap ${getSaveStatusColor()}`}>
                           {saveStatusText}
                         </span>
                       )}
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="relative z-10 flex flex-1 flex-col px-2.5 pb-3 pt-0">
+                <CardContent className="relative z-10 flex flex-1 flex-col px-3.5 pb-3 pt-2.5">
                   <ScrollFade>
                     {isOwn ? (
                       <textarea
-                        className="h-full w-full resize-none bg-transparent px-0 py-0 text-xs leading-[1.15rem] outline-none placeholder:text-muted-foreground/60"
+                        className="visible-scrollbar h-full w-full resize-none overflow-y-scroll bg-transparent px-0 py-0 pr-2 text-xs leading-[1.35rem] outline-none placeholder:text-muted-foreground/60"
                         placeholder={t('whatAreYouWorkingOnToday')}
                         value={inputValue}
                         onChange={(e) => {
@@ -541,7 +558,7 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
                         onCompositionEnd={() => { isComposing.current = false }}
                       />
                     ) : (
-                      <p className="whitespace-pre-wrap text-xs leading-[1.15rem] text-foreground/90">
+                      <p className="whitespace-pre-wrap text-xs leading-[1.35rem] text-foreground/90">
                         {log?.activities?.trim()
                           ? log.activities
                           : <span className="text-muted-foreground italic">{t('noTasksLoggedYet')}</span>}
