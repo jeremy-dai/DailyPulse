@@ -41,6 +41,13 @@ export type TranslationKey =
   | 'statusSick'
   | 'statusVacation'
 
+  | 'monthlyLeadership'
+  | 'leaderboardCondition'
+  | 'leaderboardScoreLogic'
+  | 'pts'
+  | 'noValidDataThisMonth'
+  | 'ptsAdded'
+
   | 'quickFill'
   | 'quickFillTitle'
   | 'quickFillDesc'
@@ -50,6 +57,12 @@ const messages: Record<AppLocale, Record<TranslationKey, string>> = {
     quickFill: 'Quick Fill',
     quickFillTitle: 'Quick Status Fill',
     quickFillDesc: 'Quickly set your status for the whole month',
+    monthlyLeadership: 'Monthly Leadership',
+    leaderboardCondition: 'Only days with >5 members count',
+    leaderboardScoreLogic: 'Score logic: For each valid day, 1st place gets {n} pts, 2nd gets {n_1} pts, etc. Unlogged users get 0 pts.',
+    pts: 'pts',
+    noValidDataThisMonth: 'No valid data this month.',
+    ptsAdded: 'Rank {rank}! +{score} pts for Monthly Leadership 🎊',
     overview: 'Overview',
     unknown: 'Unknown',
     monthlyOverview: 'Monthly Overview',
@@ -87,10 +100,16 @@ const messages: Record<AppLocale, Record<TranslationKey, string>> = {
     statusVacation: 'Vacation',
   },
   zh: {
-    quickFill: '快速填报',
-    quickFillTitle: '快速状态填报',
+    quickFill: '快捷填报',
+    quickFillTitle: '快捷状态填报',
     quickFillDesc: '快速设置您整月的状态',
-    overview: '总览',
+    monthlyLeadership: '月度榜单',
+    leaderboardCondition: '仅统计超过5人填写的日期',
+    leaderboardScoreLogic: '积分规则：有效日期内，第1名得 {n} 分，第2名得 {n_1} 分，依此类推。未填写得 0 分。',
+    pts: '分',
+    noValidDataThisMonth: '本月暂无有效数据。',
+    ptsAdded: '第 {rank} 名！月度榜单 +{score} 分 撒花~ 🎊',
+    overview: '月度概览',
     unknown: '未知',
     monthlyOverview: '月度总览',
     user: '用户',

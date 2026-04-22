@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from 'react'
 import { createClient } from '@/app/utils/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { cn, getInitials } from '@/lib/utils'
 import type { Profile, DailyLog, WorkStatus } from '@/types/supabase'
 import { useLocale } from '@/app/components/locale-provider'
@@ -15,7 +14,9 @@ import {
   SelectTrigger,
 } from '@/components/ui/select'
 
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Trophy, Medal, X, Info } from 'lucide-react'
+import confetti from 'canvas-confetti'
 
 type StatusTone = 'in_office' | 'wfh' | 'off' | 'unknown'
 
@@ -107,11 +108,88 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [inputValue, setInputValue] = useState('')
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [gamificationMessage, setGamificationMessage] = useState<string | null>(null)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const isComposing = useRef(false)
   const inputValueRef = useRef('')
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const shouldUpdateInputRef = useRef(true)
+
+  const [leaderboardOpen, setLeaderboardOpen] = useState(false)
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false)
+  const [leaderboardData, setLeaderboardData] = useState<{ profile: Profile; score: number }[]>([])
+
+  const openLeaderboard = async () => {
+    setLeaderboardOpen(true)
+    setLeaderboardLoading(true)
+    
+    // Get current month start and end dates
+    const dateObj = new Date(date)
+    const year = dateObj.getFullYear()
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0')
+    const startDate = `${year}-${month}-01`
+    
+    // Last day of month
+    const nextMonth = dateObj.getMonth() + 1
+    const endObj = new Date(year, nextMonth, 0)
+    const endYear = endObj.getFullYear()
+    const endMonth = String(endObj.getMonth() + 1).padStart(2, '0')
+    const endDay = String(endObj.getDate()).padStart(2, '0')
+    const endDate = `${endYear}-${endMonth}-${endDay}`
+
+    const { data: monthLogs } = await supabase
+      .from('daily_logs')
+      .select('*')
+      .gte('date', startDate)
+      .lte('date', endDate)
+
+    if (!monthLogs) {
+      setLeaderboardData([])
+      setLeaderboardLoading(false)
+      return
+    }
+
+    // Group logs by date
+    const logsByDate: Record<string, DailyLog[]> = {}
+    monthLogs.forEach(log => {
+      if (!logsByDate[log.date]) logsByDate[log.date] = []
+      logsByDate[log.date].push(log)
+    })
+
+    const scores: Record<string, number> = {}
+    initialProfiles.forEach(p => scores[p.id] = 0)
+    const N = initialProfiles.length
+
+    // Score logic
+    Object.values(logsByDate).forEach(dayLogs => {
+      // Only count days with more than 5 members
+      if (dayLogs.length > 5) {
+        // Sort by activities_at or created_at
+        const sortedDayLogs = [...dayLogs].sort((a, b) => {
+          const tA = new Date(a.activities_at ?? a.created_at).getTime()
+          const tB = new Date(b.activities_at ?? b.created_at).getTime()
+          return tA - tB
+        })
+
+        // Assign points based on rank
+        sortedDayLogs.forEach((log, index) => {
+          const rank = index + 1
+          const score = N - rank + 1
+          if (scores[log.user_id] !== undefined) {
+            scores[log.user_id] += score
+          }
+        })
+      }
+    })
+
+    const leaderboard = initialProfiles.map(p => ({
+      profile: p,
+      score: scores[p.id]
+    })).sort((a, b) => b.score - a.score)
+
+    setLeaderboardData(leaderboard)
+    setLeaderboardLoading(false)
+  }
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -160,6 +238,28 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
     if (data) onLogUpsert(data)
   }
 
+  const triggerGamification = (logData: DailyLog, isNewActivity: boolean) => {
+    if (!isNewActivity) return
+
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 }
+    })
+
+    const otherLogs = logs.filter(l => l.id !== logData.id && !!l.activities)
+    let myRank = 1
+    const myTime = new Date(logData.activities_at ?? logData.created_at).getTime()
+    otherLogs.forEach(l => {
+      const t = new Date(l.activities_at ?? l.created_at).getTime()
+      if (t < myTime) myRank++
+    })
+
+    const score = initialProfiles.length - myRank + 1
+    const msg = t('ptsAdded').replace('{rank}', myRank.toString()).replace('{score}', score.toString())
+    setGamificationMessage(msg)
+  }
+
   const save = async (activitiesOverride?: string) => {
     if (!currentUserId) return
     const activities = activitiesOverride ?? inputValueRef.current
@@ -171,12 +271,13 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
     try {
       if (log) {
         const now = new Date().toISOString()
+        const isNewActivity = !!activities && !log.activities_at
         const { data } = await supabase
           .from('daily_logs')
           .update({
             activities,
             updated_at: now,
-            ...(activities && !log.activities_at ? { activities_at: now } : {}),
+            ...(isNewActivity ? { activities_at: now } : {}),
           })
           .eq('id', log.id)
           .select()
@@ -185,13 +286,15 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
           onLogUpsert(data)
           setSaveStatus('saved')
           setLastSaved(new Date())
+          if (isNewActivity) triggerGamification(data, true)
         }
       } else {
         const now = new Date().toISOString()
+        const isNewActivity = !!activities
         const { data } = await supabase
           .from('daily_logs')
           .upsert(
-            { user_id: currentUserId, date, activities, ...(activities ? { activities_at: now } : {}) },
+            { user_id: currentUserId, date, activities, ...(isNewActivity ? { activities_at: now } : {}) },
             { onConflict: 'user_id,date' }
           )
           .select()
@@ -200,6 +303,7 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
           onLogUpsert(data)
           setSaveStatus('saved')
           setLastSaved(new Date())
+          if (isNewActivity) triggerGamification(data, true)
         }
       }
     } catch (error) {
@@ -215,7 +319,8 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
     }
     saveTimeoutRef.current = setTimeout(() => {
       setSaveStatus('idle')
-    }, 3000)
+      setGamificationMessage(null)
+    }, 4000)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -273,13 +378,15 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
     return log.activities_at ?? log.created_at
   }
 
-  const sortedOtherProfiles = initialProfiles
-    .filter((p) => p.id !== currentUserId && !!getActivityTime(p.id))
+  const rankedProfiles = initialProfiles
+    .filter((p) => !!getActivityTime(p.id))
     .sort((a, b) => {
       const tA = getActivityTime(a.id)!
       const tB = getActivityTime(b.id)!
       return new Date(tA).getTime() - new Date(tB).getTime()
     })
+
+  const sortedOtherProfiles = rankedProfiles.filter((p) => p.id !== currentUserId)
 
   const orderedProfiles = currentUserId
     ? [
@@ -290,9 +397,16 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
 
   return (
     <div className="p-3 md:p-4 w-full max-w-[1800px] mx-auto">
-      <div className="mb-2 flex items-center gap-2">
+      <div className="mb-4 md:mb-6 flex items-center gap-2">
         <div className="h-4 w-1 bg-primary rounded-full" />
         <h2 className="text-sm font-bold tracking-tight">{t('teamDailyTasks')}</h2>
+        <button
+          onClick={openLeaderboard}
+          className="ml-2 flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-semibold text-primary hover:bg-primary/20 transition-colors"
+        >
+          <Trophy className="h-3 w-3" />
+          {t('monthlyLeadership')}
+        </button>
       </div>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3">
         {orderedProfiles.map((profile) => {
@@ -302,6 +416,10 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
           const initials = getInitials(profile.name ?? profile.email)
           const tone = STATUS_COLORS[getStatusTone(log?.status ?? null)]
           const saveStatusText = isOwn ? getSaveStatusText() : null
+          
+          const rankIndex = rankedProfiles.findIndex((p) => p.id === profile.id)
+          const rank = rankIndex !== -1 ? rankIndex + 1 : null
+
           return (
             <motion.div
               key={profile.id}
@@ -317,9 +435,19 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
               )} size="sm">
                 <CardHeader className="relative z-10 flex h-full flex-row items-center gap-1.5 bg-muted/15 pl-3.5 pr-2.5 py-1">
                   <div className="relative shrink-0">
-                    <Avatar className={cn('h-7 w-7 ring-1.5 shadow-sm', tone.ring, !log && 'animate-pulse')}>
-                      <AvatarFallback className={cn('font-medium text-xs', tone.fallback)}>{initials}</AvatarFallback>
-                    </Avatar>
+                    <div className={cn(
+                      'flex h-7 w-7 shrink-0 items-center justify-center rounded-full ring-1.5 shadow-sm text-xs font-medium',
+                      rank === 1 ? 'bg-yellow-400/20 ring-yellow-400/80 text-yellow-600 dark:text-yellow-400' :
+                      rank === 2 ? 'bg-slate-400/20 ring-slate-400/80 text-slate-600 dark:text-slate-300' :
+                      rank === 3 ? 'bg-amber-600/20 ring-amber-600/80 text-amber-700 dark:text-amber-500' :
+                      cn(tone.fallback, tone.ring),
+                      !log && 'animate-pulse'
+                    )}>
+                      {rank === 1 ? <Trophy className="h-3.5 w-3.5" /> : 
+                       rank === 2 ? <Medal className="h-3.5 w-3.5" /> : 
+                       rank === 3 ? <Medal className="h-3.5 w-3.5" /> : 
+                       rank || initials}
+                    </div>
                     {!log && (
                       <div className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-[var(--status-rose-dot)] animate-pulse ring-2 ring-card"></div>
                     )}
@@ -417,6 +545,121 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
           )
         })}
       </div>
+
+      <AnimatePresence>
+        {gamificationMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: 40, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.8 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
+          >
+            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 p-[2px] rounded-full shadow-[0_0_40px_-10px_rgba(245,158,11,0.6)]">
+              <div className="bg-zinc-950/95 backdrop-blur-md text-white px-6 py-3 rounded-full flex items-center gap-3">
+                <Trophy className="w-5 h-5 text-yellow-400 animate-pulse drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]" />
+                <span className="font-extrabold text-[15px] sm:text-base tracking-wide text-zinc-50 drop-shadow-sm whitespace-nowrap">
+                  {gamificationMessage}
+                </span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {leaderboardOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/70 backdrop-blur-sm"
+            onClick={() => setLeaderboardOpen(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 8 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+              className="bg-card border border-border rounded-xl w-full max-w-md max-h-[85vh] flex flex-col shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-md bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center shrink-0 text-yellow-600 dark:text-yellow-400">
+                    <Trophy className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-semibold text-foreground leading-tight">{t('monthlyLeadership')}</h2>
+                    <p className="text-xs text-muted-foreground leading-tight">{t('leaderboardCondition')}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setLeaderboardOpen(false)}
+                  className="w-8 h-8 rounded-md hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="overflow-y-auto flex-1 min-h-0 px-4 py-4">
+                {leaderboardLoading ? (
+                  <div className="space-y-3">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="h-12 bg-muted rounded-xl animate-pulse" />
+                    ))}
+                  </div>
+                ) : leaderboardData.length > 0 ? (
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-md p-3 mb-4">
+                      <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                      <p className="leading-relaxed">
+                        {t('leaderboardScoreLogic')
+                          .replace('{n}', initialProfiles.length.toString())
+                          .replace('{n_1}', (initialProfiles.length - 1).toString())}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      {leaderboardData.map((item, i) => {
+                        const rank = i + 1
+                        return (
+                          <div key={item.profile.id} className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors">
+                            <div className={cn(
+                              'flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-1.5 shadow-sm text-sm font-medium',
+                              rank === 1 ? 'bg-yellow-400/20 ring-yellow-400/80 text-yellow-600 dark:text-yellow-400' :
+                              rank === 2 ? 'bg-slate-400/20 ring-slate-400/80 text-slate-600 dark:text-slate-300' :
+                              rank === 3 ? 'bg-amber-600/20 ring-amber-600/80 text-amber-700 dark:text-amber-500' :
+                              'bg-muted ring-border text-muted-foreground'
+                            )}>
+                              {rank === 1 ? <Trophy className="h-4 w-4" /> : 
+                               rank === 2 ? <Medal className="h-4 w-4" /> : 
+                               rank === 3 ? <Medal className="h-4 w-4" /> : 
+                               rank}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm truncate">{item.profile.name || item.profile.email.split('@')[0]}</div>
+                            </div>
+                            <div className="text-sm font-bold text-foreground">
+                              {item.score} <span className="text-xs font-normal text-muted-foreground">{t('pts')}</span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-10 text-muted-foreground text-sm">
+                    {t('noValidDataThisMonth')}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

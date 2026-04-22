@@ -47,10 +47,30 @@ export default function DayPanel() {
   const todayStr = today.toLocaleDateString('en-CA')
   const selectedDate = params.date as string
 
-  const [viewYear, setViewYear] = useState(today.getFullYear())
-  const [viewMonth, setViewMonth] = useState(today.getMonth())
+  const initialDate = useMemo(() => {
+    if (selectedDate) {
+      const d = new Date(selectedDate)
+      if (!isNaN(d.getTime())) {
+        return d
+      }
+    }
+    return today
+  }, [selectedDate])
+
+  const [viewYear, setViewYear] = useState(initialDate.getFullYear())
+  const [viewMonth, setViewMonth] = useState(initialDate.getMonth())
   const [pendingDate, setPendingDate] = useState<string | null>(null)
   const todayRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (selectedDate) {
+      const d = new Date(selectedDate)
+      if (!isNaN(d.getTime())) {
+        setViewYear(d.getFullYear())
+        setViewMonth(d.getMonth())
+      }
+    }
+  }, [selectedDate])
 
   const [overviewOpen, setOverviewOpen] = useState(false)
   const [overviewLogs, setOverviewLogs] = useState<(DailyLog & { profile?: Profile })[]>([])
