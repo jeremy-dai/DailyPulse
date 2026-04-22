@@ -38,12 +38,14 @@ const getDaysInMonth = (year: number, month: number): Date[] => {
   return days
 }
 
+const DAY_PANEL_SCROLL_KEY = 'day-panel-scroll-top'
+
 export default function DayPanel() {
   const { locale, localeTag, t } = useLocale()
   const params = useParams()
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const today = new Date()
+  const today = useMemo(() => new Date(), [])
   const todayStr = today.toLocaleDateString('en-CA')
   const selectedDate = params.date as string
 
@@ -55,22 +57,13 @@ export default function DayPanel() {
       }
     }
     return today
-  }, [selectedDate])
+  }, [selectedDate, today])
 
   const [viewYear, setViewYear] = useState(initialDate.getFullYear())
   const [viewMonth, setViewMonth] = useState(initialDate.getMonth())
   const [pendingDate, setPendingDate] = useState<string | null>(null)
   const todayRef = useRef<HTMLButtonElement>(null)
-
-  useEffect(() => {
-    if (selectedDate) {
-      const d = new Date(selectedDate)
-      if (!isNaN(d.getTime())) {
-        setViewYear(d.getFullYear())
-        setViewMonth(d.getMonth())
-      }
-    }
-  }, [selectedDate])
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const [overviewOpen, setOverviewOpen] = useState(false)
   const [overviewLogs, setOverviewLogs] = useState<(DailyLog & { profile?: Profile })[]>([])
@@ -198,6 +191,15 @@ export default function DayPanel() {
   )
 
   useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    const savedScrollTop = window.sessionStorage.getItem(DAY_PANEL_SCROLL_KEY)
+    if (savedScrollTop !== null) {
+      container.scrollTop = Number(savedScrollTop)
+      return
+    }
+
     todayRef.current?.scrollIntoView({ block: 'center', behavior: 'instant' })
   }, [])
 
@@ -283,7 +285,16 @@ export default function DayPanel() {
           )}
         </div>
       </div>
-      <div className="overflow-y-auto flex-1 px-4 space-y-1 scrollbar-hide pb-6">
+      <div
+        ref={scrollContainerRef}
+        onScroll={(event) => {
+          window.sessionStorage.setItem(
+            DAY_PANEL_SCROLL_KEY,
+            String(event.currentTarget.scrollTop)
+          )
+        }}
+        className="overflow-y-auto flex-1 px-4 space-y-1 scrollbar-hide pb-6"
+      >
         {dates.map((date) => {
           const dateStr = date.toLocaleDateString('en-CA')
           const isToday = dateStr === todayStr
@@ -575,20 +586,22 @@ export default function DayPanel() {
                                   "w-full text-xs rounded-md border px-2 py-1.5 h-auto cursor-pointer transition-colors",
                                   log?.status ? `${colors.bg} ${colors.border} ${colors.text} font-medium` : "bg-background border-border text-muted-foreground"
                                 )}>
-                                  {log?.status ? (
-                                    (() => {
-                                      const labels: Record<WorkStatus, string> = {
-                                        in_office: t('statusInOffice'),
-                                        wfh: t('statusWfh'),
-                                        off: t('statusOff'),
-                                        sick: t('statusSick'),
-                                        vacation: t('statusVacation'),
-                                      }
-                                      return labels[log.status]
-                                    })()
-                                  ) : (
-                                    <span className="text-muted-foreground">{t('setStatus')}</span>
-                                  )}
+                                  <span className="truncate min-w-0 flex-1 text-left">
+                                    {log?.status ? (
+                                      (() => {
+                                        const labels: Record<WorkStatus, string> = {
+                                          in_office: t('statusInOffice'),
+                                          wfh: t('statusWfh'),
+                                          off: t('statusOff'),
+                                          sick: t('statusSick'),
+                                          vacation: t('statusVacation'),
+                                        }
+                                        return labels[log.status]
+                                      })()
+                                    ) : (
+                                      t('setStatus')
+                                    )}
+                                  </span>
                                 </SelectTrigger>
                                 <SelectContent className="bg-card border-border rounded-xl p-1">
                                   <SelectItem value="in_office" className="rounded-lg focus:bg-muted cursor-pointer text-xs">{t('statusInOffice')}</SelectItem>

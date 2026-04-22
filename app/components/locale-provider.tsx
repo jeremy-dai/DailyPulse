@@ -100,8 +100,8 @@ const messages: Record<AppLocale, Record<TranslationKey, string>> = {
     statusVacation: 'Vacation',
   },
   zh: {
-    quickFill: '快捷填报',
-    quickFillTitle: '快捷状态填报',
+    quickFill: '快速更新',
+    quickFillTitle: '快速更新状态',
     quickFillDesc: '快速设置您整月的状态',
     monthlyLeadership: '月度榜单',
     leaderboardCondition: '仅统计超过5人填写的日期',
