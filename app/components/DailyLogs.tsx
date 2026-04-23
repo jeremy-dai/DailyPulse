@@ -68,8 +68,8 @@ interface Props {
   onLogUpsert: (log: DailyLog) => void
 }
 
-function ScrollFade({ children }: { children: React.ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null)
+function ScrollFade({ children, deps = [] }: { children: (props: { ref: React.RefObject<any>, onScroll: () => void, className: string }) => React.ReactNode, deps?: React.DependencyList }) {
+  const ref = useRef<HTMLElement>(null)
   const [hasOverflow, setHasOverflow] = useState(false)
   const [showBottomCue, setShowBottomCue] = useState(false)
 
@@ -93,15 +93,17 @@ function ScrollFade({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  useEffect(() => {
+    check()
+  }, deps)
+
   return (
     <div className="relative flex-1 min-h-0">
-      <div
-        ref={ref}
-        className="visible-scrollbar h-full overflow-y-scroll pr-2"
-        onScroll={check}
-      >
-        {children}
-      </div>
+      {children({
+        ref,
+        onScroll: check,
+        className: "visible-scrollbar h-full overflow-y-scroll pr-2",
+      })}
       {showBottomCue && (
         <>
           <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-7 bg-gradient-to-t from-card via-card/85 to-transparent" />
@@ -540,10 +542,12 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
                   </div>
                 </CardHeader>
                 <CardContent className="relative z-10 flex flex-1 flex-col px-3.5 pb-3 pt-2.5">
-                  <ScrollFade>
-                    {isOwn ? (
+                  <ScrollFade deps={[inputValue, log?.activities]}>
+                    {({ ref, onScroll, className }) => isOwn ? (
                       <textarea
-                        className="visible-scrollbar h-full w-full resize-none overflow-y-scroll bg-transparent px-0 py-0 pr-2 text-xs leading-[1.35rem] outline-none placeholder:text-muted-foreground/60"
+                        ref={ref}
+                        onScroll={onScroll}
+                        className={cn(className, "w-full resize-none bg-transparent px-0 py-0 text-xs leading-[1.35rem] outline-none placeholder:text-muted-foreground/60")}
                         placeholder={t('whatAreYouWorkingOnToday')}
                         value={inputValue}
                         onChange={(e) => {
@@ -558,11 +562,13 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
                         onCompositionEnd={() => { isComposing.current = false }}
                       />
                     ) : (
-                      <p className="whitespace-pre-wrap text-xs leading-[1.35rem] text-foreground/90">
-                        {log?.activities?.trim()
-                          ? log.activities
-                          : <span className="text-muted-foreground italic">{t('noTasksLoggedYet')}</span>}
-                      </p>
+                      <div ref={ref} onScroll={onScroll} className={className}>
+                        <p className="whitespace-pre-wrap text-xs leading-[1.35rem] text-foreground/90">
+                          {log?.activities?.trim()
+                            ? log.activities
+                            : <span className="text-muted-foreground italic">{t('noTasksLoggedYet')}</span>}
+                        </p>
+                      </div>
                     )}
                   </ScrollFade>
                 </CardContent>
