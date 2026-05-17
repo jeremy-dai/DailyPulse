@@ -36,6 +36,11 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- Data API grants (required for new tables after Supabase's May 30, 2026 rollout)
+grant select, update on public.profiles to authenticated;
+grant select on public.profiles to anon;
+grant select, insert, update on public.daily_logs to authenticated;
+
 -- Enable RLS on both tables
 alter table profiles enable row level security;
 alter table daily_logs enable row level security;
