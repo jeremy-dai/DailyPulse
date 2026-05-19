@@ -18,6 +18,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Trophy, Medal, X, Info, ChevronDown, Camera } from 'lucide-react'
 import confetti from 'canvas-confetti'
 
+import { ChecklistEditor, ChecklistViewer } from './Checklist'
+
 type StatusTone = 'in_office' | 'wfh' | 'off' | 'unknown'
 
 const STATUS_COLORS: Record<StatusTone, { bg: string, text: string, border: string, ring: string, fallback: string, dot: string, inputOutline: string }> = {
@@ -103,7 +105,7 @@ interface Props {
   onEditProfile: () => void
 }
 
-function ScrollFade({ children, deps = [] }: { children: (props: { ref: React.RefObject<any>, onScroll: () => void, className: string }) => React.ReactNode, deps?: React.DependencyList }) {
+function ScrollFade({ children, deps = [] }: { children: (props: { ref: React.RefObject<HTMLElement | null>, onScroll: () => void, className: string }) => React.ReactNode, deps?: React.DependencyList }) {
   const ref = useRef<HTMLElement>(null)
   const [hasOverflow, setHasOverflow] = useState(false)
   const [showBottomCue, setShowBottomCue] = useState(false)
@@ -161,8 +163,6 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert, on
   const [inputValue, setInputValue] = useState('')
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [gamificationMessage, setGamificationMessage] = useState<string | null>(null)
-  const [lastSaved, setLastSaved] = useState<Date | null>(null)
-  const isComposing = useRef(false)
   const inputValueRef = useRef('')
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const shouldUpdateInputRef = useRef(true)
@@ -337,7 +337,6 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert, on
         if (data) {
           onLogUpsert(data)
           setSaveStatus('saved')
-          setLastSaved(new Date())
           if (isNewActivity) triggerGamification(data, true)
         }
       } else {
@@ -354,7 +353,6 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert, on
         if (data) {
           onLogUpsert(data)
           setSaveStatus('saved')
-          setLastSaved(new Date())
           if (isNewActivity) triggerGamification(data, true)
         }
       }
@@ -375,38 +373,9 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert, on
     }, 4000)
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey && !isComposing.current) {
-      e.preventDefault()
-      const v = e.currentTarget.value
-      inputValueRef.current = v
-      void save(v)
-    }
-  }
 
-  const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
-    if (isComposing.current || !currentUserId) return
-    // Read from the DOM: blur can run before React commits the last onChange, so state may be stale.
-    const value = e.currentTarget.value
-    inputValueRef.current = value
-    const log = logs.find((l) => l.user_id === currentUserId)
-    const persisted = log?.activities ?? ''
-    if (value === persisted) {
-      shouldUpdateInputRef.current = true
-      return
-    }
-    void save(value)
-  }
 
-  const formatTimeAgo = (date: Date) => {
-    const now = new Date()
-    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
-    
-    if (seconds < 60) return 'just now'
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`
-    return `${Math.floor(seconds / 86400)}d ago`
-  }
+
 
   const getSaveStatusColor = () => {
     switch (saveStatus) {
@@ -618,30 +587,27 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert, on
                 <CardContent className="relative z-10 flex flex-1 flex-col px-3.5 pb-3 pt-2.5">
                   <ScrollFade deps={[inputValue, log?.activities]}>
                     {({ ref, onScroll, className }) => isOwn ? (
-                      <textarea
-                        ref={ref}
-                        onScroll={onScroll}
-                        className={cn(className, "w-full resize-none bg-transparent px-0 py-0 text-xs leading-[1.35rem] outline-none placeholder:text-muted-foreground/60")}
-                        placeholder={t('whatAreYouWorkingOnToday')}
-                        value={inputValue}
-                        onChange={(e) => {
-                          const v = e.target.value
-                          inputValueRef.current = v
-                          setInputValue(v)
-                          shouldUpdateInputRef.current = false
-                        }}
-                        onKeyDown={handleKeyDown}
-                        onBlur={handleBlur}
-                        onCompositionStart={() => { isComposing.current = true }}
-                        onCompositionEnd={() => { isComposing.current = false }}
-                      />
+                      <div ref={ref as React.RefObject<HTMLDivElement>} onScroll={onScroll} className={cn(className, "w-full")}>
+                        <ChecklistEditor
+                          value={inputValue}
+                          onChange={(v) => {
+                            inputValueRef.current = v
+                            setInputValue(v)
+                            shouldUpdateInputRef.current = false
+                          }}
+                          onSave={(v) => {
+                            inputValueRef.current = v
+                            void save(v)
+                          }}
+                          placeholder={t('whatAreYouWorkingOnToday')}
+                        />
+                      </div>
                     ) : (
-                      <div ref={ref} onScroll={onScroll} className={className}>
-                        <p className="whitespace-pre-wrap text-xs leading-[1.35rem] text-foreground/90">
-                          {log?.activities?.trim()
-                            ? log.activities
-                            : <span className="text-muted-foreground italic">{t('noTasksLoggedYet')}</span>}
-                        </p>
+                      <div ref={ref as React.RefObject<HTMLDivElement>} onScroll={onScroll} className={className}>
+                        <ChecklistViewer 
+                          value={log?.activities ?? ''} 
+                          emptyText={t('noTasksLoggedYet')}
+                        />
                       </div>
                     )}
                   </ScrollFade>

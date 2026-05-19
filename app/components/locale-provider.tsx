@@ -183,6 +183,7 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY)
     if (saved === 'en' || saved === 'zh') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocale(saved)
     }
     setStorageReady(true)
