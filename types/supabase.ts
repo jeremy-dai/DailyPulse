@@ -4,6 +4,9 @@ export interface Profile {
   id: string
   email: string
   name: string | null
+  avatar_url: string | null
+  is_admin: boolean
+  is_hidden: boolean
   created_at: string
 }
 

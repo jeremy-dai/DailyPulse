@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/app/utils/supabase/client'
 import { Badge } from '@/components/ui/badge'
@@ -47,31 +48,20 @@ interface Props {
   date: string
   initialProfiles: Profile[]
   logs: DailyLog[]
+  onEditProfile: () => void
 }
 
 import { motion } from 'framer-motion'
 
-export default function TopDashboard({ date, initialProfiles, logs }: Props) {
+export default function TopDashboard({ date, initialProfiles, logs, onEditProfile }: Props) {
   const { locale, localeTag, toggleLocale, t } = useLocale()
   const supabase = createClient()
   const router = useRouter()
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-  const [editingName, setEditingName] = useState(false)
-  const [nameValue, setNameValue] = useState('')
-  const [nameSaving, setNameSaving] = useState(false)
 
   async function handleSignOut() {
     await supabase.auth.signOut()
     router.push('/login')
-  }
-
-  async function handleSaveName() {
-    if (!currentUserId) return
-    setNameSaving(true)
-    await supabase.from('profiles').update({ name: nameValue.trim() || null }).eq('id', currentUserId)
-    setNameSaving(false)
-    setEditingName(false)
-    router.refresh()
   }
 
   useEffect(() => {
@@ -111,42 +101,34 @@ export default function TopDashboard({ date, initialProfiles, logs }: Props) {
         <h1 className="text-lg font-bold tracking-tight text-foreground">{displayDate}</h1>
         {currentUserId && (
           <div className="flex items-center gap-3">
-            {editingName ? (
-              <div className="flex items-center gap-2">
-                <input
-                  autoFocus
-                  type="text"
-                  value={nameValue}
-                  onChange={(e) => setNameValue(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSaveName()
-                    if (e.key === 'Escape') setEditingName(false)
-                  }}
-                  placeholder={t('displayName')}
-                  className="w-36 rounded-full border border-border/30 bg-muted px-3 py-2 text-sm outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
-                />
-                <button
-                  onClick={handleSaveName}
-                  disabled={nameSaving}
-                  className="rounded-full bg-primary px-3 py-2 text-sm font-medium text-primary-foreground transition-all hover:bg-primary/90 disabled:opacity-50"
-                >
-                  {nameSaving ? '…' : t('save')}
-                </button>
-                <button
-                  onClick={() => setEditingName(false)}
-                  className="rounded-full border border-border/20 bg-muted px-3 py-2 text-sm font-medium text-muted-foreground transition-all hover:border-border/50 hover:text-foreground"
-                >
-                  {t('cancel')}
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => { setNameValue(currentProfile?.name ?? ''); setEditingName(true) }}
-                className="rounded-full border border-border/20 bg-muted px-4 py-2 text-sm font-medium text-muted-foreground transition-all hover:border-border/50 hover:text-foreground"
-                title={t('editDisplayName')}
-              >
+            <button
+              onClick={onEditProfile}
+              className="flex items-center gap-2 rounded-full border border-border/20 bg-muted py-1 pl-1 pr-3 text-sm font-medium text-muted-foreground transition-all hover:border-border/50 hover:text-foreground"
+              title={t('editProfile')}
+            >
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-card ring-1 ring-border/40 text-[10px] font-semibold">
+                {currentProfile?.avatar_url ? (
+                  <img
+                    src={currentProfile.avatar_url}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  (currentProfile?.name || currentProfile?.email || '?').trim().charAt(0).toUpperCase()
+                )}
+              </span>
+              <span className="truncate max-w-[140px]">
                 {currentProfile?.name || currentProfile?.email || t('setName')}
-              </button>
+              </span>
+            </button>
+            {currentProfile?.is_admin && (
+              <Link
+                href="/admin"
+                className="rounded-full border border-border/20 bg-muted px-4 py-2 text-sm font-medium text-muted-foreground transition-all hover:border-border/50 hover:text-foreground"
+              >
+                Admin
+              </Link>
             )}
             <button
               onClick={handleSignOut}

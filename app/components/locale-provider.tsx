@@ -52,8 +52,19 @@ export type TranslationKey =
   | 'quickFillTitle'
   | 'quickFillDesc'
 
+  | 'editProfile'
+  | 'changePhoto'
+  | 'uploadingPhoto'
+  | 'uploadFailed'
+  | 'invalidImage'
+
 const messages: Record<AppLocale, Record<TranslationKey, string>> = {
   en: {
+    editProfile: 'Edit profile',
+    changePhoto: 'Change photo',
+    uploadingPhoto: 'Uploading…',
+    uploadFailed: 'Upload failed',
+    invalidImage: 'Please choose an image file',
     quickFill: 'Quick Fill',
     quickFillTitle: 'Quick Status Fill',
     quickFillDesc: 'Quickly set your status for the whole month',
@@ -100,6 +111,11 @@ const messages: Record<AppLocale, Record<TranslationKey, string>> = {
     statusVacation: 'Vacation',
   },
   zh: {
+    editProfile: '编辑资料',
+    changePhoto: '更换头像',
+    uploadingPhoto: '上传中…',
+    uploadFailed: '上传失败',
+    invalidImage: '请选择图片文件',
     quickFill: '快速更新',
     quickFillTitle: '快速更新状态',
     quickFillDesc: '快速设置您整月的状态',

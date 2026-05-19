@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/select'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { Trophy, Medal, X, Info, ChevronDown } from 'lucide-react'
+import { Trophy, Medal, X, Info, ChevronDown, Camera } from 'lucide-react'
 import confetti from 'canvas-confetti'
 
 type StatusTone = 'in_office' | 'wfh' | 'off' | 'unknown'
@@ -61,11 +61,46 @@ const getStatusLabel = (status: WorkStatus, t: (key: TranslationKey) => string) 
   }
 }
 
+const RankBadge = ({ rank }: { rank: number | null }) => {
+  if (!rank) return null
+
+  if (rank === 1) {
+    return (
+      <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-yellow-400 text-white shadow-sm ring-2 ring-card">
+        <Trophy className="h-2.5 w-2.5" />
+      </div>
+    )
+  }
+
+  if (rank === 2) {
+    return (
+      <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-slate-400 text-white shadow-sm ring-2 ring-card">
+        <Medal className="h-2.5 w-2.5" />
+      </div>
+    )
+  }
+
+  if (rank === 3) {
+    return (
+      <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-600 text-white shadow-sm ring-2 ring-card">
+        <Medal className="h-2.5 w-2.5" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-muted px-1 text-[9px] font-bold tabular-nums leading-none text-muted-foreground shadow-sm ring-2 ring-card">
+      {rank}
+    </div>
+  )
+}
+
 interface Props {
   date: string
   initialProfiles: Profile[]
   logs: DailyLog[]
   onLogUpsert: (log: DailyLog) => void
+  onEditProfile: () => void
 }
 
 function ScrollFade({ children, deps = [] }: { children: (props: { ref: React.RefObject<any>, onScroll: () => void, className: string }) => React.ReactNode, deps?: React.DependencyList }) {
@@ -119,7 +154,7 @@ function ScrollFade({ children, deps = [] }: { children: (props: { ref: React.Re
   )
 }
 
-export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: Props) {
+export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert, onEditProfile }: Props) {
   const { t } = useLocale()
   const supabase = createClient()
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -461,19 +496,58 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
                   "bg-muted/15"
                 )}>
                   <div className="relative shrink-0">
-                    <div className={cn(
-                      'flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-full ring-1.5 shadow-sm text-xs font-medium',
-                      rank === 1 ? 'bg-yellow-400/20 ring-yellow-400/80 text-yellow-600 dark:text-yellow-400' :
-                      rank === 2 ? 'bg-slate-400/20 ring-slate-400/80 text-slate-600 dark:text-slate-300' :
-                      rank === 3 ? 'bg-amber-600/20 ring-amber-600/80 text-amber-700 dark:text-amber-500' :
-                      cn(tone.fallback, tone.ring),
-                      !log && 'animate-pulse'
-                    )}>
-                      {rank === 1 ? <Trophy className="h-3.5 w-3.5" /> : 
-                       rank === 2 ? <Medal className="h-3.5 w-3.5" /> : 
-                       rank === 3 ? <Medal className="h-3.5 w-3.5" /> : 
-                       rank || initials}
-                    </div>
+                    {isOwn ? (
+                      <button
+                        type="button"
+                        onClick={onEditProfile}
+                        title={t('editProfile')}
+                        className={cn(
+                          'group/avatar flex h-8.5 w-8.5 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1.5 shadow-sm text-xs font-medium cursor-pointer',
+                          rank === 1 ? 'ring-yellow-400/80' :
+                          rank === 2 ? 'ring-slate-400/80' :
+                          rank === 3 ? 'ring-amber-600/80' :
+                          tone.ring,
+                          !profile.avatar_url && (
+                            rank === 1 ? 'bg-yellow-400/20 text-yellow-600 dark:text-yellow-400' :
+                            rank === 2 ? 'bg-slate-400/20 text-slate-600 dark:text-slate-300' :
+                            rank === 3 ? 'bg-amber-600/20 text-amber-700 dark:text-amber-500' :
+                            tone.fallback
+                          ),
+                          !log && 'animate-pulse'
+                        )}
+                      >
+                        {profile.avatar_url ? (
+                          <img src={profile.avatar_url} alt={displayName} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+                        ) : (
+                          initials
+                        )}
+                        <span className="absolute inset-0 hidden items-center justify-center bg-black/50 text-white group-hover/avatar:flex">
+                          <Camera className="h-3.5 w-3.5" />
+                        </span>
+                      </button>
+                    ) : (
+                      <div className={cn(
+                        'flex h-8.5 w-8.5 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1.5 shadow-sm text-xs font-medium',
+                        rank === 1 ? 'ring-yellow-400/80' :
+                        rank === 2 ? 'ring-slate-400/80' :
+                        rank === 3 ? 'ring-amber-600/80' :
+                        tone.ring,
+                        !profile.avatar_url && (
+                          rank === 1 ? 'bg-yellow-400/20 text-yellow-600 dark:text-yellow-400' :
+                          rank === 2 ? 'bg-slate-400/20 text-slate-600 dark:text-slate-300' :
+                          rank === 3 ? 'bg-amber-600/20 text-amber-700 dark:text-amber-500' :
+                          tone.fallback
+                        ),
+                        !log && 'animate-pulse'
+                      )}>
+                        {profile.avatar_url ? (
+                          <img src={profile.avatar_url} alt={displayName} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+                        ) : (
+                          initials
+                        )}
+                      </div>
+                    )}
+                    <RankBadge rank={rank} />
                     {!log && (
                       <div className="absolute right-0 top-0 h-2 w-2 rounded-full bg-[var(--status-rose-dot)] animate-pulse ring-2 ring-card" />
                     )}
@@ -659,17 +733,27 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert }: 
                         const rank = i + 1
                         return (
                           <div key={item.profile.id} className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors">
-                            <div className={cn(
-                              'flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-1.5 shadow-sm text-sm font-medium',
-                              rank === 1 ? 'bg-yellow-400/20 ring-yellow-400/80 text-yellow-600 dark:text-yellow-400' :
-                              rank === 2 ? 'bg-slate-400/20 ring-slate-400/80 text-slate-600 dark:text-slate-300' :
-                              rank === 3 ? 'bg-amber-600/20 ring-amber-600/80 text-amber-700 dark:text-amber-500' :
-                              'bg-muted ring-border text-muted-foreground'
-                            )}>
-                              {rank === 1 ? <Trophy className="h-4 w-4" /> : 
-                               rank === 2 ? <Medal className="h-4 w-4" /> : 
-                               rank === 3 ? <Medal className="h-4 w-4" /> : 
-                               rank}
+                            <div className="relative shrink-0">
+                              <div className={cn(
+                                'flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1.5 shadow-sm text-sm font-medium',
+                                rank === 1 ? 'ring-yellow-400/80' :
+                                rank === 2 ? 'ring-slate-400/80' :
+                                rank === 3 ? 'ring-amber-600/80' :
+                                'ring-border',
+                                !item.profile.avatar_url && (
+                                  rank === 1 ? 'bg-yellow-400/20 text-yellow-600 dark:text-yellow-400' :
+                                  rank === 2 ? 'bg-slate-400/20 text-slate-600 dark:text-slate-300' :
+                                  rank === 3 ? 'bg-amber-600/20 text-amber-700 dark:text-amber-500' :
+                                  'bg-muted text-muted-foreground'
+                                )
+                              )}>
+                                {item.profile.avatar_url ? (
+                                  <img src={item.profile.avatar_url} alt={item.profile.name ?? item.profile.email} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+                                ) : (
+                                  rank
+                                )}
+                              </div>
+                              <RankBadge rank={rank} />
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="font-medium text-sm truncate">{item.profile.name || item.profile.email.split('@')[0]}</div>

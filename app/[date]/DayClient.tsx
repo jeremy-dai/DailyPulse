@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/app/utils/supabase/client'
 import TopDashboard from '@/app/components/TopDashboard'
 import DailyLogs from '@/app/components/DailyLogs'
+import ProfileEditModal from '@/app/components/ProfileEditModal'
 import type { DailyLog, Profile } from '@/types/supabase'
 
 interface Props {
@@ -29,10 +30,25 @@ interface BroadcastPayload {
 export default function DayClient({ date, initialProfiles, initialLogs }: Props) {
   const [supabase] = useState(() => createClient())
   const [logs, setLogs] = useState<DailyLog[]>(initialLogs)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [editOpen, setEditOpen] = useState(false)
 
   useEffect(() => {
     setLogs(initialLogs)
   }, [initialLogs])
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setCurrentUserId(user.id)
+    })
+  }, [supabase])
+
+  const currentProfile = useMemo(
+    () => (currentUserId ? initialProfiles.find((p) => p.id === currentUserId) ?? null : null),
+    [currentUserId, initialProfiles]
+  )
+
+  const openEdit = () => setEditOpen(true)
 
   useEffect(() => {
     supabase.realtime.setAuth()
@@ -67,12 +83,19 @@ export default function DayClient({ date, initialProfiles, initialLogs }: Props)
         date={date}
         initialProfiles={initialProfiles}
         logs={logs}
+        onEditProfile={openEdit}
       />
       <DailyLogs
         date={date}
         initialProfiles={initialProfiles}
         logs={logs}
         onLogUpsert={handleLogUpsert}
+        onEditProfile={openEdit}
+      />
+      <ProfileEditModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        profile={currentProfile}
       />
     </div>
   )
