@@ -12,6 +12,7 @@ import {
   SelectItem,
   SelectTrigger,
 } from '@/components/ui/select'
+import { ChecklistViewer, hasChecklistItems } from './Checklist'
 
 type StatusTone = 'in_office' | 'wfh' | 'off' | 'unknown'
 
@@ -161,7 +162,7 @@ export default function DayPanel() {
     ])
     const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]))
     const enriched = (logs ?? [])
-      .filter((l) => l.activities?.trim())
+      .filter((l) => hasChecklistItems(l.activities))
       .map((l) => ({ ...l, profile: profileMap.get(l.user_id) }))
     setOverviewLogs(enriched)
     setOverviewLoading(false)
@@ -444,14 +445,19 @@ export default function DayPanel() {
                             {entries.map((entry) => (
                               <div key={entry.id} className="bg-muted/50 rounded-lg px-3 py-2 border border-border/50">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-xs font-medium text-foreground/80 truncate sm:text-sm">
-                                    {entry.profile?.name ?? entry.profile?.email ?? t('unknown')}
-                                  </span>
+                                  {!overviewUserId && (
+                                    <span className="text-xs font-medium text-foreground/80 truncate sm:text-sm">
+                                      {entry.profile?.name ?? entry.profile?.email ?? t('unknown')}
+                                    </span>
+                                  )}
                                   <span className="text-xs text-muted-foreground uppercase tracking-wide font-medium ml-auto shrink-0">
                                     {entry.status.replace('_', ' ')}
                                   </span>
                                 </div>
-                                <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{entry.activities}</p>
+                                <ChecklistViewer
+                                  value={entry.activities ?? ''}
+                                  className="text-muted-foreground"
+                                />
                               </div>
                             ))}
                           </div>

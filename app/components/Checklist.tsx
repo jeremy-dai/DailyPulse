@@ -44,6 +44,10 @@ export function serializeChecklist(items: TaskItem[]): string {
   return meaningfulItems.map(item => `- [${item.checked ? 'x' : ' '}] ${item.text}`).join('\n');
 }
 
+export function hasChecklistItems(text: string | null | undefined): boolean {
+  return parseChecklist(text ?? '').some(item => item.text.trim() !== '');
+}
+
 interface ChecklistEditorProps {
   value: string;
   onChange: (value: string) => void;
