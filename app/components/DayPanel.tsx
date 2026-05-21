@@ -230,11 +230,17 @@ export default function DayPanel() {
   })
 
   const navigateToDate = (dateStr: string) => {
-    if (dateStr === selectedDate) return
+    const isToday = dateStr === todayStr
+    const isAlreadyTodayRoute = !selectedDate && isToday
+    if (dateStr === selectedDate || isAlreadyTodayRoute) return
 
     setPendingDate(dateStr)
     startTransition(() => {
-      router.push(`/${dateStr}`)
+      if (isToday) {
+        router.push(`/`)
+      } else {
+        router.push(`/${dateStr}`)
+      }
     })
   }
 
@@ -299,7 +305,7 @@ export default function DayPanel() {
         {dates.map((date) => {
           const dateStr = date.toLocaleDateString('en-CA')
           const isToday = dateStr === todayStr
-          const isSelected = dateStr === selectedDate
+          const isSelected = dateStr === selectedDate || (!selectedDate && isToday)
           const isPendingSelection = isPending && pendingDate === dateStr
           const isWeekend = date.getDay() === 0 || date.getDay() === 6
 

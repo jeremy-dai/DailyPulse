@@ -15,8 +15,7 @@ export default async function AdminPage() {
     .single()
 
   if (!me?.is_admin) {
-    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Shanghai' })
-    redirect(`/${today}`)
+    redirect(`/`)
   }
 
   const { data: profiles } = await supabase
