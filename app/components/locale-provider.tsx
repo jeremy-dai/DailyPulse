@@ -47,6 +47,9 @@ export type TranslationKey =
   | 'pts'
   | 'noValidDataThisMonth'
   | 'ptsAdded'
+  | 'notLoggedBoard'
+  | 'missedDays'
+  | 'quickFillHint'
 
   | 'quickFill'
   | 'quickFillTitle'
@@ -74,6 +77,9 @@ const messages: Record<AppLocale, Record<TranslationKey, string>> = {
     pts: 'pts',
     noValidDataThisMonth: 'No valid data this month.',
     ptsAdded: 'Rank {rank}! +{score} pts for Monthly Leadership 🎊',
+    notLoggedBoard: 'Not Logged',
+    missedDays: 'days not logged',
+    quickFillHint: 'Keep your status up to date so teammates know your working situation — even for vacation or time off. Use Quick Fill in the sidebar to set it in bulk.',
     overview: 'Overview',
     unknown: 'Unknown',
     monthlyOverview: 'Monthly Overview',
@@ -125,6 +131,9 @@ const messages: Record<AppLocale, Record<TranslationKey, string>> = {
     pts: '分',
     noValidDataThisMonth: '本月暂无有效数据。',
     ptsAdded: '第 {rank} 名！月度榜单 +{score} 分 撒花~ 🎊',
+    notLoggedBoard: '未打卡',
+    missedDays: '天未打卡',
+    quickFillHint: '更新状态让同事随时了解你的工作安排，休假或请假也记得打卡哦～使用侧边栏的快速更新可批量设置。',
     overview: '月度概览',
     unknown: '未知',
     monthlyOverview: '月度总览',

@@ -170,6 +170,7 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert, on
   const [leaderboardOpen, setLeaderboardOpen] = useState(false)
   const [leaderboardLoading, setLeaderboardLoading] = useState(false)
   const [leaderboardData, setLeaderboardData] = useState<{ profile: Profile; score: number }[]>([])
+  const [notLoggedData, setNotLoggedData] = useState<{ profile: Profile; missedDays: number }[]>([])
 
   const openLeaderboard = async () => {
     setLeaderboardOpen(true)
@@ -239,7 +240,22 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert, on
       score: scores[p.id]
     })).sort((a, b) => b.score - a.score)
 
+    const notLoggedCounts: Record<string, number> = {}
+    initialProfiles.forEach(p => { notLoggedCounts[p.id] = 0 })
+    Object.values(logsByDate).forEach(dayLogs => {
+      if (dayLogs.length > 5) {
+        const loggedIds = new Set(dayLogs.map(l => l.user_id))
+        initialProfiles.forEach(p => {
+          if (!loggedIds.has(p.id)) notLoggedCounts[p.id]++
+        })
+      }
+    })
+    const notLogged = initialProfiles
+      .map(p => ({ profile: p, missedDays: notLoggedCounts[p.id] }))
+      .sort((a, b) => b.missedDays - a.missedDays)
+
     setLeaderboardData(leaderboard)
+    setNotLoggedData(notLogged)
     setLeaderboardLoading(false)
   }
 
@@ -653,7 +669,7 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert, on
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-              className="bg-card border border-border rounded-xl w-full max-w-md max-h-[85vh] flex flex-col shadow-2xl"
+              className="bg-card border border-border rounded-xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
@@ -679,57 +695,97 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert, on
               {/* Body */}
               <div className="overflow-y-auto flex-1 min-h-0 px-4 py-4">
                 {leaderboardLoading ? (
-                  <div className="space-y-3">
-                    {[...Array(5)].map((_, i) => (
-                      <div key={i} className="h-12 bg-muted rounded-xl animate-pulse" />
+                  <div className="grid grid-cols-2 gap-4">
+                    {[0, 1].map((col) => (
+                      <div key={col} className="space-y-3">
+                        <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+                        {[...Array(5)].map((_, i) => (
+                          <div key={i} className="h-12 bg-muted rounded-xl animate-pulse" />
+                        ))}
+                      </div>
                     ))}
                   </div>
                 ) : leaderboardData.length > 0 ? (
-                  <div className="space-y-2">
-                    <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-md p-3 mb-4">
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-md p-3">
                       <Info className="w-4 h-4 shrink-0 mt-0.5" />
-                      <p className="leading-relaxed">
-                        {t('leaderboardScoreLogic')
-                          .replace('{n}', initialProfiles.length.toString())
-                          .replace('{n_1}', (initialProfiles.length - 1).toString())}
-                      </p>
+                      <div className="space-y-1 leading-relaxed">
+                        <p>
+                          {t('leaderboardScoreLogic')
+                            .replace('{n}', initialProfiles.length.toString())
+                            .replace('{n_1}', (initialProfiles.length - 1).toString())}
+                        </p>
+                        <p className="text-muted-foreground/70">{t('quickFillHint')}</p>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      {leaderboardData.map((item, i) => {
-                        const rank = i + 1
-                        return (
-                          <div key={item.profile.id} className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors">
-                            <div className="relative shrink-0">
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Leadership board */}
+                      <div className="space-y-2">
+                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">{t('monthlyLeadership')}</div>
+                        {leaderboardData.map((item, i) => {
+                          const rank = i + 1
+                          return (
+                            <div key={item.profile.id} className="flex items-center gap-2.5 p-2.5 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors">
+                              <div className="relative shrink-0">
+                                <div className={cn(
+                                  'flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1.5 shadow-sm text-xs font-medium',
+                                  rank === 1 ? 'ring-yellow-400/80' :
+                                  rank === 2 ? 'ring-slate-400/80' :
+                                  rank === 3 ? 'ring-amber-600/80' :
+                                  'ring-border',
+                                  !item.profile.avatar_url && (
+                                    rank === 1 ? 'bg-yellow-400/20 text-yellow-600 dark:text-yellow-400' :
+                                    rank === 2 ? 'bg-slate-400/20 text-slate-600 dark:text-slate-300' :
+                                    rank === 3 ? 'bg-amber-600/20 text-amber-700 dark:text-amber-500' :
+                                    'bg-muted text-muted-foreground'
+                                  )
+                                )}>
+                                  {item.profile.avatar_url ? (
+                                    <img src={item.profile.avatar_url} alt={item.profile.name ?? item.profile.email} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+                                  ) : rank}
+                                </div>
+                                <RankBadge rank={rank} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-xs truncate">{item.profile.name || item.profile.email.split('@')[0]}</div>
+                              </div>
+                              <div className="text-sm font-bold text-foreground tabular-nums">
+                                {item.score} <span className="text-[10px] font-normal text-muted-foreground">{t('pts')}</span>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      {/* Not logged board */}
+                      <div className="space-y-2">
+                        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-1">{t('notLoggedBoard')}</div>
+                        {notLoggedData.map((item, i) => {
+                          const isWorst = i === 0 && item.missedDays > 0
+                          return (
+                            <div key={item.profile.id} className="flex items-center gap-2.5 p-2.5 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors">
                               <div className={cn(
-                                'flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1.5 shadow-sm text-sm font-medium',
-                                rank === 1 ? 'ring-yellow-400/80' :
-                                rank === 2 ? 'ring-slate-400/80' :
-                                rank === 3 ? 'ring-amber-600/80' :
-                                'ring-border',
-                                !item.profile.avatar_url && (
-                                  rank === 1 ? 'bg-yellow-400/20 text-yellow-600 dark:text-yellow-400' :
-                                  rank === 2 ? 'bg-slate-400/20 text-slate-600 dark:text-slate-300' :
-                                  rank === 3 ? 'bg-amber-600/20 text-amber-700 dark:text-amber-500' :
-                                  'bg-muted text-muted-foreground'
-                                )
+                                'flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1.5 shadow-sm text-xs font-medium',
+                                isWorst ? 'ring-[var(--status-rose-border)]/60' : 'ring-border',
+                                !item.profile.avatar_url && (isWorst ? 'bg-[var(--status-rose-bg)]/20 text-[var(--status-rose-text)]' : 'bg-muted text-muted-foreground')
                               )}>
                                 {item.profile.avatar_url ? (
                                   <img src={item.profile.avatar_url} alt={item.profile.name ?? item.profile.email} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
-                                ) : (
-                                  rank
-                                )}
+                                ) : (i + 1)}
                               </div>
-                              <RankBadge rank={rank} />
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium text-xs truncate">{item.profile.name || item.profile.email.split('@')[0]}</div>
+                              </div>
+                              <div className={cn(
+                                'text-sm font-bold tabular-nums',
+                                item.missedDays === 0 ? 'text-[var(--status-emerald-text)]' : 'text-foreground'
+                              )}>
+                                {item.missedDays} <span className="text-[10px] font-normal text-muted-foreground">{t('missedDays')}</span>
+                              </div>
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium text-sm truncate">{item.profile.name || item.profile.email.split('@')[0]}</div>
-                            </div>
-                            <div className="text-sm font-bold text-foreground">
-                              {item.score} <span className="text-xs font-normal text-muted-foreground">{t('pts')}</span>
-                            </div>
-                          </div>
-                        )
-                      })}
+                          )
+                        })}
+                      </div>
                     </div>
                   </div>
                 ) : (
