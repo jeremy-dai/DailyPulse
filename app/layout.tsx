@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { GridBackground } from '@/components/ui/grid-background'
 import { ThemeProvider } from '@/components/theme-provider'
+import { Analytics } from '@vercel/analytics/next'
 
 export const metadata: Metadata = {
   title: 'DailyPulse',
@@ -24,6 +25,7 @@ export default function RootLayout({
         >
           <GridBackground>{children}</GridBackground>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   )
