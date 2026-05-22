@@ -34,5 +34,14 @@ export interface Database {
     Enums: {
       work_status: WorkStatus
     }
+    Functions: {
+      get_last_active_date: {
+        Args: {
+          min_logs: number
+          current_date_str: string
+        }
+        Returns: string | null
+      }
+    }
   }
 }

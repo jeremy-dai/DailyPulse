@@ -5,6 +5,7 @@ import { createClient } from '@/app/utils/supabase/client'
 import TopDashboard from '@/app/components/TopDashboard'
 import DailyLogs from '@/app/components/DailyLogs'
 import ProfileEditModal from '@/app/components/ProfileEditModal'
+import ActiveDayReminder from '@/app/components/ActiveDayReminder'
 import type { DailyLog, Profile } from '@/types/supabase'
 
 interface Props {
@@ -97,6 +98,7 @@ export default function DayClient({ date, initialProfiles, initialLogs }: Props)
         onClose={() => setEditOpen(false)}
         profile={currentProfile}
       />
+      <ActiveDayReminder currentUserId={currentUserId} />
     </div>
   )
 }
