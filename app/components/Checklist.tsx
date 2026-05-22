@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import { CheckSquare, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -59,10 +59,20 @@ interface ChecklistEditorProps {
 export function ChecklistEditor({ value, onChange, onSave, placeholder, className }: ChecklistEditorProps) {
   const [items, setItems] = useState<TaskItem[]>(() => parseChecklist(value));
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
+  const inputsRef = useRef<(HTMLTextAreaElement | null)[]>([]);
   const isComposing = useRef(false);
   const lastNotifiedValue = useRef<string>(value);
   const latestSerializedValue = useRef<string>(serializeChecklist(parseChecklist(value)));
+
+  const resizeTextarea = useCallback((textarea: HTMLTextAreaElement | null) => {
+    if (!textarea) return;
+    textarea.style.height = '0px';
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }, []);
+
+  useLayoutEffect(() => {
+    inputsRef.current.forEach(resizeTextarea);
+  }, [items, resizeTextarea]);
 
   // Sync state if external value changes completely (e.g. user switch)
   useEffect(() => {
@@ -97,7 +107,7 @@ export function ChecklistEditor({ value, onChange, onSave, placeholder, classNam
     onSave(serializeChecklist(newItems));
   };
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (isComposing.current) return;
 
     if (e.key === 'Enter') {
@@ -137,7 +147,7 @@ export function ChecklistEditor({ value, onChange, onSave, placeholder, classNam
     }
   };
 
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+  const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
     if (isComposing.current) return;
     if (rootRef.current?.contains(e.relatedTarget as Node | null)) return;
     onSave(latestSerializedValue.current);
@@ -158,18 +168,23 @@ export function ChecklistEditor({ value, onChange, onSave, placeholder, classNam
               <Square className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" />
             )}
           </button>
-          <input
+          <textarea
             ref={(el) => {
               inputsRef.current[index] = el;
+              resizeTextarea(el);
             }}
-            type="text"
             className={cn(
-              "flex-1 bg-transparent px-0 py-0 text-xs leading-[1.35rem] outline-none placeholder:text-muted-foreground/60 min-w-0",
+              "flex-1 resize-none overflow-hidden bg-transparent px-0 py-0 text-xs leading-[1.35rem] outline-none placeholder:text-muted-foreground/60 min-w-0",
               item.checked && "text-muted-foreground line-through decoration-muted-foreground/50"
             )}
+            rows={1}
+            wrap="soft"
             placeholder={index === 0 ? placeholder : ''}
             value={item.text}
-            onChange={(e) => handleItemChange(index, e.target.value)}
+            onChange={(e) => {
+              resizeTextarea(e.currentTarget);
+              handleItemChange(index, e.target.value);
+            }}
             onKeyDown={(e) => handleKeyDown(index, e)}
             onBlur={handleBlur}
             onCompositionStart={() => { isComposing.current = true; }}
