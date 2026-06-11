@@ -1,5 +1,16 @@
+-- ============================================================================
+-- DailyPulse database schema (consolidated)
+--
+-- This single Supabase project is shared by three apps: DailyPulse, hi-kevin,
+-- and kevin-analysis. This file is the full current state of the DB; it folds
+-- in every migration under database/migrations/ (001..005). Apply this on a
+-- fresh project, or apply the individual migrations on an existing one.
+-- ============================================================================
+
 -- Create status enum (add more if needed)
 create type work_status as enum ('in_office', 'wfh', 'off', 'sick', 'vacation');
+
+-- ── Tables ──────────────────────────────────────────────────────────────────
 
 -- Public profiles table (syncs with Supabase Auth)
 create table profiles (
@@ -25,17 +36,61 @@ create table daily_logs (
   unique(user_id, date) -- Prevent duplicate logs for the same user on the same day
 );
 
--- Auto-create profile when user signs up
+-- Per-user KAWO credentials (consumed by hi-kevin / kevin-analysis).
+--
+-- These MUST NOT live on `profiles`: the profiles RLS lets every authenticated
+-- user read every profile row (team dashboard needs that), which would leak
+-- each user's KAWO API token to the whole team. They live here instead, where
+-- RLS only lets a user see their OWN row.
+create table user_kawo_credentials (
+  user_id uuid primary key references public.profiles(id) on delete cascade,
+  kawo_token text,
+  kawo_org_id text,
+  kawo_brand_id text,
+  kawo_api_url text,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Seed table: KAWO credentials exported from the OLD shared Supabase project,
+-- keyed by email (auth.users.id differs between projects, so email is the only
+-- stable join key). The handle_new_user trigger copies a user's row into
+-- user_kawo_credentials on first Google login. Holds raw tokens, so it is
+-- locked down hard below (no API grants, deny-all RLS) — never browser-readable.
+create table kawo_profile_seed (
+  email text primary key,
+  full_name text,
+  kawo_token text,
+  kawo_org_id text,
+  kawo_brand_id text,
+  kawo_api_url text
+);
+
+-- ── Signup triggers ─────────────────────────────────────────────────────────
+
+-- Auto-create profile when a user signs up, seeding name + KAWO credentials
+-- from kawo_profile_seed (matched by lower(email)) when a seed row exists.
 create function public.handle_new_user()
 returns trigger as $$
+declare
+  seed public.kawo_profile_seed%rowtype;
 begin
+  select * into seed from public.kawo_profile_seed where email = lower(new.email);
+
   insert into public.profiles (id, email, name, avatar_url)
   values (
     new.id,
     new.email,
-    new.raw_user_meta_data->>'full_name',
+    coalesce(new.raw_user_meta_data->>'full_name', seed.full_name),
     new.raw_user_meta_data->>'avatar_url'
   );
+
+  if seed.email is not null then
+    insert into public.user_kawo_credentials
+      (user_id, kawo_token, kawo_org_id, kawo_brand_id, kawo_api_url)
+    values
+      (new.id, seed.kawo_token, seed.kawo_org_id, seed.kawo_brand_id, seed.kawo_api_url);
+  end if;
+
   return new;
 end;
 $$ language plpgsql security definer;
@@ -44,14 +99,34 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- Data API grants (required for new tables after Supabase's May 30, 2026 rollout)
+-- Block signups from any email not in the company domain.
+create function public.check_email_domain()
+returns trigger as $$
+begin
+  if new.email not like '%@kawo.com' then
+    raise exception 'Only @kawo.com emails are allowed to access this site';
+  end if;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+create trigger block_non_company_signups
+  before insert on auth.users
+  for each row execute function public.check_email_domain();
+
+-- ── Data API grants ─────────────────────────────────────────────────────────
+-- Required for new tables after Supabase's May 30, 2026 rollout (tables no
+-- longer auto-grant to anon/authenticated).
 grant select, update, delete on public.profiles to authenticated;
 grant select on public.profiles to anon;
 grant select, insert, update, delete on public.daily_logs to authenticated;
+grant select, insert, update, delete on public.user_kawo_credentials to authenticated;
+-- kawo_profile_seed: intentionally NO grants (see lockdown below).
 
--- Enable RLS on both tables
+-- ── Row Level Security ──────────────────────────────────────────────────────
 alter table profiles enable row level security;
 alter table daily_logs enable row level security;
+alter table user_kawo_credentials enable row level security;
 
 -- Helper: is the caller an admin? SECURITY DEFINER avoids RLS recursion when
 -- a policy on `profiles` needs to look up `profiles.is_admin`.
@@ -59,6 +134,25 @@ create function public.is_admin(uid uuid)
 returns boolean as $$
   select coalesce((select is_admin from public.profiles where id = uid), false);
 $$ language sql stable security definer;
+
+-- Guard against privilege escalation: RLS gates which ROW you may update, not
+-- which COLUMNS. Without this, the ownership-only update policy below would let
+-- any user self-set is_admin/is_hidden. Only admins may change those columns.
+create function public.guard_privileged_profile_cols()
+returns trigger as $$
+begin
+  if (new.is_admin is distinct from old.is_admin
+      or new.is_hidden is distinct from old.is_hidden)
+     and not public.is_admin(auth.uid()) then
+    raise exception 'Only admins can change is_admin/is_hidden';
+  end if;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+create trigger guard_profile_privileged_cols
+  before update on public.profiles
+  for each row execute function public.guard_privileged_profile_cols();
 
 -- Profiles: Everyone can read, only you (or admins) can edit
 create policy "All authenticated users can read profiles"
@@ -85,30 +179,69 @@ create policy "Users can update their own logs"
 on daily_logs for update to authenticated
 using (auth.uid() = user_id);
 
--- Block signups from any email not in your company domain
-create function public.check_email_domain()
-returns trigger as $$
-begin
-  -- Replace with your actual company domain(s)
-  if new.email not like '%@kawo.com' then
-    raise exception 'Only @kawo.com emails are allowed to access this site';
-  end if;
-  return new;
-end;
-$$ language plpgsql security definer;
+-- KAWO credentials: each user can only see/write their OWN row.
+create policy "Users read their own kawo credentials"
+on user_kawo_credentials for select to authenticated
+using (auth.uid() = user_id);
 
-create trigger block_non_company_signups
-  before insert on auth.users
-  for each row execute function public.check_email_domain();
+create policy "Users insert their own kawo credentials"
+on user_kawo_credentials for insert to authenticated
+with check (auth.uid() = user_id);
 
--- Create RPC to get the most recent date with more than min_logs
+create policy "Users update their own kawo credentials"
+on user_kawo_credentials for update to authenticated
+using (auth.uid() = user_id);
+
+-- kawo_profile_seed lockdown (belt-and-suspenders). Deny-all RLS plus an
+-- explicit revoke of every API grant, so no anon/authenticated request can
+-- reach it. Only the SECURITY DEFINER trigger and server-side service_role
+-- can read it.
+alter table kawo_profile_seed enable row level security;
+alter table kawo_profile_seed force row level security;
+revoke all on public.kawo_profile_seed from anon, authenticated, public;
+
+-- ── Storage: avatars bucket ─────────────────────────────────────────────────
+-- Users upload to `{user_id}/avatar.jpg`; the folder-prefix check in RLS
+-- ensures one user can't write into another user's folder.
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do nothing;
+
+create policy "Avatar images are publicly readable"
+  on storage.objects for select
+  using (bucket_id = 'avatars');
+
+create policy "Users can upload their own avatar"
+  on storage.objects for insert to authenticated
+  with check (
+    bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+create policy "Users can update their own avatar"
+  on storage.objects for update to authenticated
+  using (
+    bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+create policy "Users can delete their own avatar"
+  on storage.objects for delete to authenticated
+  using (
+    bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- ── RPCs ────────────────────────────────────────────────────────────────────
+
+-- Most recent date (before current_date_str) with more than min_logs logs.
 create or replace function public.get_last_active_date(min_logs integer, current_date_str text)
 returns date as $$
-  select date 
-  from public.daily_logs 
+  select date
+  from public.daily_logs
   where date < current_date_str::date
-  group by date 
-  having count(*) > min_logs 
-  order by date desc 
+  group by date
+  having count(*) > min_logs
+  order by date desc
   limit 1;
 $$ language sql stable security definer;
