@@ -55,6 +55,16 @@ export type TranslationKey =
   | 'quickFillTitle'
   | 'quickFillDesc'
 
+  | 'myMonth'
+  | 'myMonthSubtitle'
+  | 'checkAll'
+  | 'clearAll'
+  | 'done'
+  | 'markAllDone'
+  | 'clearDay'
+  | 'allDone'
+  | 'noPersonalTasksThisMonth'
+
   | 'editProfile'
   | 'changePhoto'
   | 'uploadingPhoto'
@@ -71,6 +81,15 @@ const messages: Record<AppLocale, Record<TranslationKey, string>> = {
     quickFill: 'Quick Fill',
     quickFillTitle: 'Quick Status Fill',
     quickFillDesc: 'Quickly set your status for the whole month',
+    myMonth: 'My Month',
+    myMonthSubtitle: 'Your tasks this month',
+    checkAll: 'Check all',
+    clearAll: 'Clear all',
+    done: 'done',
+    markAllDone: 'Mark this day done',
+    clearDay: 'Clear this day',
+    allDone: 'All done',
+    noPersonalTasksThisMonth: 'No tasks logged this month yet',
     monthlyLeadership: 'Monthly Leadership',
     leaderboardCondition: 'Only days with >5 members count',
     leaderboardScoreLogic: 'Score logic: For each valid day, 1st place gets {n} pts, 2nd gets {n_1} pts, etc. Unlogged users get 0 pts.',
@@ -125,6 +144,15 @@ const messages: Record<AppLocale, Record<TranslationKey, string>> = {
     quickFill: '快速更新',
     quickFillTitle: '快速更新状态',
     quickFillDesc: '快速设置您整月的状态',
+    myMonth: '我的本月',
+    myMonthSubtitle: '你本月的任务',
+    checkAll: '全部勾选',
+    clearAll: '全部清除',
+    done: '已完成',
+    markAllDone: '标记当天全部完成',
+    clearDay: '清除当天勾选',
+    allDone: '全部完成',
+    noPersonalTasksThisMonth: '本月还没有任务记录',
     monthlyLeadership: '月度榜单',
     leaderboardCondition: '仅统计超过5人填写的日期',
     leaderboardScoreLogic: '积分规则：有效日期内，第1名得 {n} 分，第2名得 {n_1} 分，依此类推。未填写得 0 分。',

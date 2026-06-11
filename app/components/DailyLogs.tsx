@@ -433,7 +433,7 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert, on
     : sortedOtherProfiles
 
   return (
-    <div className="p-3 md:p-4 w-full max-w-[1800px] mx-auto">
+    <div className="p-3 md:p-4 pr-12 md:pr-14 w-full max-w-[1800px] mx-auto">
       <div className="mb-4 md:mb-6 flex items-center gap-2">
         <div className="h-4 w-1 bg-primary rounded-full" />
         <h2 className="text-sm font-bold tracking-tight">{t('teamDailyTasks')}</h2>
@@ -600,7 +600,7 @@ export default function DailyLogs({ date, initialProfiles, logs, onLogUpsert, on
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="relative z-10 flex flex-1 flex-col px-3.5 pb-3 pt-2.5">
+                <CardContent className="relative z-10 flex flex-1 flex-col px-3.5 pb-3 pt-1">
                   <ScrollFade deps={[inputValue, log?.activities]}>
                     {({ ref, onScroll, className }) => isOwn ? (
                       <div ref={ref as React.RefObject<HTMLDivElement>} onScroll={onScroll} className={cn(className, "w-full")}>

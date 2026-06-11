@@ -6,6 +6,7 @@ import TopDashboard from '@/app/components/TopDashboard'
 import DailyLogs from '@/app/components/DailyLogs'
 import ProfileEditModal from '@/app/components/ProfileEditModal'
 import ActiveDayReminder from '@/app/components/ActiveDayReminder'
+import MyMonthDrawer from '@/app/components/MyMonthDrawer'
 import type { DailyLog, Profile } from '@/types/supabase'
 
 interface Props {
@@ -99,6 +100,7 @@ export default function DayClient({ date, initialProfiles, initialLogs }: Props)
         profile={currentProfile}
       />
       <ActiveDayReminder currentUserId={currentUserId} />
+      <MyMonthDrawer currentUserId={currentUserId} date={date} />
     </div>
   )
 }
